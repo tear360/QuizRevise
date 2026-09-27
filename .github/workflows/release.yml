@@ -70,6 +70,7 @@ jobs:
           java-version: '17'
 
       - name: Compute version
+        shell: bash
         run: |
           if [[ "$GITHUB_REF_NAME" == v* ]]; then VERSION="${GITHUB_REF_NAME#v}"; else VERSION="1.4.${GITHUB_RUN_NUMBER}"; fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
@@ -167,7 +168,7 @@ jobs:
 
       - name: Compute version
         run: |
-          if [[ "$GITHUB_REF_NAME" == v* ]]; then VERSION="${GITHUB_REF_NAME#v}"; else VERSION="1.1.${GITHUB_RUN_NUMBER}"; fi
+          if [[ "$GITHUB_REF_NAME" == v* ]]; then VERSION="${GITHUB_REF_NAME#v}"; else VERSION="1.4.${GITHUB_RUN_NUMBER}"; fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
       - name: Generate Xcode project
