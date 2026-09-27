@@ -191,8 +191,24 @@ jobs:
         with:
           path: dist
 
+      - name: Extraire la section du changelog pour cette version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            BEGIN { target = "## [" ver "]" }
+            index($0, target) == 1 { flag=1; next }
+            /^## \[/ && flag { exit }
+            flag { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Section absente du CHANGELOG.md pour $VERSION — notes générées par GitHub uniquement." > release-notes.md
+          fi
+          cat release-notes.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/**/*
+          body_path: release-notes.md
           generate_release_notes: true
+          overwrite_files: true
