@@ -9,5 +9,5 @@ fun main(args: Array<String>) {
     // Interface = page HTML/CSS/JS rendue dans un WebView JavaFX (voir DesktopUi).
     System.setProperty("prism.lcdtext", "false")
     System.setProperty("prism.text", "t2k")
-    DesktopUi.launch()
+    DesktopUi.launch(uitest = args.contains("--uitest"))
 }

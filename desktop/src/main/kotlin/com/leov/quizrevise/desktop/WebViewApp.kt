@@ -31,9 +31,13 @@ object JSONizer {
 object DesktopUi {
 
     private val db = DesktopDb()
+    internal var lastEngine: WebEngine? = null
 
-    fun launch() {
-        Platform.startup { show() }
+    fun launch(uitest: Boolean = false) {
+        Platform.startup {
+            show()
+            if (uitest) UiTest.run()
+        }
         // Le thread JavaFX (non-daemon) maintient le processus en vie.
     }
 
@@ -96,6 +100,7 @@ object DesktopUi {
         stage.minWidth = 640.0
         stage.minHeight = 520.0
         stage.show()
+        lastEngine = engine
     }
 
     /**

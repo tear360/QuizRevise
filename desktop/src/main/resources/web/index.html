@@ -52,6 +52,35 @@
   }
   header .icon-btn:hover { background: rgba(255,255,255,.3); }
   header .icon-btn svg { width: 21px; height: 21px; fill: #fff; }
+  .hdr-pill {
+    background: rgba(255,255,255,.16);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s;
+    flex-shrink: 0;
+  }
+  .hdr-pill:hover { background: rgba(255,255,255,.3); }
+
+  /* Bandeau d'erreur visible (plus jamais d'échec silencieux) */
+  #errBanner {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--wrong);
+    color: #fff;
+    padding: 12px 20px;
+    font-size: 14px;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0,0,0,.3);
+    display: none;
+  }
+  #errBanner button { float: right; background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; }
+  .form-err { color: var(--wrong); font-size: 13px; margin-top: 10px; min-height: 16px; font-weight: 600; }
 
   main { flex: 1; overflow-y: auto; padding: 20px 24px 120px; }
   .empty {
@@ -220,15 +249,12 @@
 </style>
 </head>
 <body>
+  <div id="errBanner"><span id="errMsg"></span><button onclick="this.parentElement.style.display='none'">✕</button></div>
   <header id="hdr">
     <button class="icon-btn" id="btnBack" title="Retour">←</button>
     <h1 id="title">Mes paquets</h1>
-    <button class="icon-btn" id="btnImport" title="Importer un fichier .qrevise" style="display:none">
-      <svg viewBox="0 0 24 24"><path d="M19 15v4H5v-4H3v6h18v-6h-2zM6 9l5 5V2h2v12l5-5 1.41 1.41L12 17.83 4.59 10.41 6 9z"/></svg>
-    </button>
-    <button class="icon-btn" id="btnExportAll" title="Exporter tous les paquets" style="display:none">
-      <svg viewBox="0 0 24 24"><path d="M5 9v4H3v6h18v-6h-2V9c0-1.1-.9-2-2-2h-4.5V4.5a2.25 2.25 0 0 0-4.5 0V7H7c-1.1 0-2 .9-2 2z"/></svg>
-    </button>
+    <button class="hdr-pill" id="btnImport" style="display:none">📥 Importer</button>
+    <button class="hdr-pill" id="btnExportAll" style="display:none">📤 Exporter tout</button>
     <button class="icon-btn" id="btnStats" title="Statistiques">
       <svg viewBox="0 0 24 24"><path d="M5 21V9h4v12H5zm5 0V3h4v18h-4zm5 0v-8h4v8h-4z"/></svg>
     </button>
@@ -257,6 +283,15 @@
 
 <script>
 'use strict';
+
+// ============ ERREURS VISIBLES (plus jamais silencieuses) ============
+function showError(msg) {
+  const b = document.getElementById('errBanner');
+  document.getElementById('errMsg').textContent = '⚠️ ' + msg;
+  b.style.display = 'block';
+}
+window.addEventListener('error', function (e) { showError('Erreur JS : ' + e.message); });
+window.onerror = function (msg) { showError('Erreur JS : ' + msg); };
 // ============================================================
 // Pont natif : la page n'affiche rien tant que Kotlin n'a pas
 // injecté window.QuizReviseNative puis appelé nativeReady().
@@ -608,11 +643,30 @@ function openDialog(title, bodyHtml, onOk) {
   const ok = document.getElementById('dlgOk');
   const cancel = document.getElementById('dlgCancel');
   function close() { back.style.display = 'none'; ok.onclick = null; cancel.onclick = null; }
-  ok.onclick = function () { if (onOk()) close(); };
+  ok.onclick = function () {
+    // Toute exception (pont natif, données) s'affiche DANS le modal au lieu de rien faire
+    let err = document.getElementById('formErr');
+    if (!err) {
+      err = document.createElement('div');
+      err.id = 'formErr';
+      err.className = 'form-err';
+      document.getElementById('dlgBody').appendChild(err);
+    }
+    err.textContent = '';
+    try {
+      if (onOk()) close(); else err.textContent = 'Veuillez remplir tous les champs.';
+    } catch (e) {
+      err.textContent = 'Erreur : ' + e.message;
+    }
+  };
   cancel.onclick = close;
   back.style.display = 'flex';
   const input = back.querySelector('input');
   if (input) { input.focus(); input.select(); }
+  // Entrée = Enregistrer
+  back.querySelector('input')?.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') ok.click();
+  });
 }
 
 // ============ FAB ============
