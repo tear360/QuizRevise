@@ -146,7 +146,7 @@ final class Store: ObservableObject {
         for d in selected {
             arr.append([
                 "name": d.name,
-                "color": hex(d.colorHex),
+                "color": Self.hex(d.colorHex),
                 "cards": d.cards.map { ["q": $0.question, "a": $0.answer] }
             ])
         }
@@ -171,7 +171,7 @@ final class Store: ObservableObject {
         for d in arr {
             guard let name = d["name"] as? String, !name.trimmingCharacters(in: .whitespaces).isEmpty else { continue }
             let color = Self.color(fromHex: d["color"] as? String)
-            let deck = Deck(name: name, colorHex: color)
+            var deck = Deck(name: name, colorHex: color)
             if let cards = d["cards"] as? [[String: Any]] {
                 for c in cards {
                     if let q = c["q"] as? String, let a = c["a"] as? String,
