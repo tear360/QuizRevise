@@ -1,10 +1,15 @@
 package com.leov.quizrevise
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -23,6 +28,8 @@ class StudyActivity : AppCompatActivity() {
     private var pos = 0
     private var correctCount = 0
     private var revealed = false
+    private var everRevealed = false
+    private var animating = false
     private var mode = "flash"
     private var currentAnswer = ""
     private val handler = Handler(Looper.getMainLooper())
@@ -70,7 +77,9 @@ class StudyActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnAgain).setOnClickListener { startSession(mode) }
         findViewById<Button>(R.id.btnBackToDeck).setOnClickListener { finish() }
         answerButtons.forEach { btn -> btn.setOnClickListener { onQuizAnswer(btn) } }
-        cardContainer.setOnClickListener { if (mode == "flash" && !revealed) reveal() }
+        cardContainer.setOnClickListener { if (mode == "flash") flipCard() }
+        // Perspective plus prononcée pour l'animation de retournement
+        cardContainer.cameraDistance = 8000f * resources.displayMetrics.density
 
         chooseMode()
     }
@@ -101,14 +110,13 @@ class StudyActivity : AppCompatActivity() {
         val card = deckCards[order[pos]]
         currentAnswer = card.answer
         revealed = false
+        everRevealed = false
+        animating = false
+        cardContainer.rotationY = 0f
 
         progressText.text = getString(R.string.progress, pos + 1, order.size)
         progressBar.setProgressCompat(pos, true)
-
-        cardSideLabel.text = getString(R.string.question_hint)
-        cardText.text = card.question
-        tapHint.visibility = if (mode == "flash") View.VISIBLE else View.GONE
-        flashButtons.visibility = View.GONE
+        setSide(false)
 
         if (mode == "quiz") {
             quizButtons.visibility = View.VISIBLE
@@ -141,12 +149,46 @@ class StudyActivity : AppCompatActivity() {
         }
     }
 
-    private fun reveal() {
-        revealed = true
-        cardSideLabel.text = getString(R.string.answer_hint)
-        cardText.text = currentAnswer
-        tapHint.visibility = View.GONE
-        flashButtons.visibility = View.VISIBLE
+    /** Retournement illimité avec animation 3D : chaque appui alterne question ↔ réponse. */
+    private fun flipCard() {
+        if (mode != "flash" || animating) return
+        animating = true
+        val showAnswerNext = !revealed
+        if (showAnswerNext) everRevealed = true
+        val first = ValueAnimator.ofFloat(0f, 90f)
+        first.duration = 150
+        first.interpolator = AccelerateInterpolator()
+        first.addUpdateListener { cardContainer.rotationY = it.animatedValue as Float }
+        first.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                setSide(showAnswerNext)
+                cardContainer.rotationY = -90f
+                val second = ValueAnimator.ofFloat(-90f, 0f)
+                second.duration = 150
+                second.interpolator = DecelerateInterpolator()
+                second.addUpdateListener { cardContainer.rotationY = it.animatedValue as Float }
+                second.addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) { animating = false }
+                })
+                second.start()
+            }
+        })
+        first.start()
+    }
+
+    private fun setSide(showAnswer: Boolean) {
+        revealed = showAnswer
+        if (showAnswer) {
+            cardSideLabel.text = getString(R.string.answer_hint)
+            cardText.text = currentAnswer
+            tapHint.visibility = View.GONE
+            flashButtons.visibility = View.VISIBLE
+        } else {
+            cardSideLabel.text = getString(R.string.question_hint)
+            cardText.text = deckCards[order[pos]].question
+            tapHint.visibility = if (mode == "flash" && !everRevealed) View.VISIBLE else View.GONE
+            if (!everRevealed) flashButtons.visibility = View.GONE
+        }
     }
 
     private fun onQuizAnswer(btn: Button) {

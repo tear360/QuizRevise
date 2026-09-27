@@ -1,80 +1,124 @@
 package com.leov.quizrevise.desktop
 
-import java.awt.*
-import javax.swing.*
+import java.awt.BorderLayout
+import java.awt.Color
+import java.awt.Dimension
+import java.awt.FlowLayout
+import java.awt.Font
+import java.awt.GridBagLayout
+import java.awt.Insets
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import javax.swing.BorderFactory
+import javax.swing.BoxLayout
+import javax.swing.JDialog
+import javax.swing.JLabel
+import javax.swing.JOptionPane
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JTextField
+import javax.swing.SwingUtilities
 
-/** Fenêtre de gestion des cartes d'un paquet (ajout, édition, suppression) + bouton Réviser. */
+/** Fenêtre de gestion des cartes d'un paquet, style Material 3. */
 class DeckWindow(
-    owner: JFrame,
+    owner: java.awt.Window,
     private val db: DesktopDb,
     private val deck: Deck
-) : JDialog(owner, deck.name, true) {
+) : JDialog(owner as? java.awt.Frame, deck.name, true) {
 
-    private val listModel = DefaultListModel<Card>()
-    private val list = JList(listModel)
+    private val rowsPanel = JPanel().apply {
+        layout = BoxLayout(this, BoxLayout.Y_AXIS)
+        isOpaque = false
+        border = BorderFactory.createEmptyBorder(16, 16, 8, 16)
+    }
+    private val emptyLabel = JLabel(
+        "<html><div style='text-align:center'>Ce paquet est vide.<br>Ajoute ta première carte !</div></html>",
+        javax.swing.SwingConstants.CENTER
+    ).apply { foreground = M3.ON_SURFACE_VARIANT }
 
     init {
-        size = Dimension(560, 620)
+        size = Dimension(640, 680)
         setLocationRelativeTo(owner)
         layout = BorderLayout()
 
-        val toolbar = JToolBar().apply { isFloatable = false }
-        val addBtn = JButton("＋ Ajouter une carte")
-        val studyBtn = JButton("▶ Réviser")
-        toolbar.add(addBtn)
-        toolbar.add(studyBtn)
+        val header = Header(deck.name)
+        val back = PillButton("←", M3.PRIMARY_DARK, Color.WHITE).apply {
+            preferredSize = Dimension(46, 36)
+            font = Font("Segoe UI", Font.PLAIN, 14)
+            addActionListener { dispose() }
+        }
+        header.add(back, BorderLayout.WEST)
+        add(header, BorderLayout.NORTH)
 
-        list.cellRenderer = CardRenderer()
-        list.fixedCellHeight = 64
-        val scroll = JScrollPane(list)
-        val emptyLabel = JLabel("Ce paquet est vide.\nAjoute ta première carte !", SwingConstants.CENTER)
-        emptyLabel.verticalAlignment = SwingConstants.CENTER
+        val scroll = JScrollPane(rowsPanel).apply {
+            border = null
+            verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
+            horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+            viewport.background = M3.BACKGROUND
+            background = M3.BACKGROUND
+        }
+        val center = JPanel(BorderLayout()).apply { background = M3.BACKGROUND }
+        center.add(emptyLabel, BorderLayout.NORTH)
+        center.add(scroll, BorderLayout.CENTER)
+        add(center, BorderLayout.CENTER)
 
-        add(toolbar, BorderLayout.NORTH)
-        add(scroll, BorderLayout.CENTER)
-
-        addBtn.addActionListener { askCard(null) }
-        studyBtn.addActionListener {
-            val cards = db.cards(deck.id)
-            if (cards.size < 2) {
+        val south = JPanel(FlowLayout(FlowLayout.TRAILING, 28, 20)).apply { isOpaque = false }
+        south.add(PillButton("▶ Réviser", M3.PRIMARY, Color.WHITE) {
+            if (db.cards(deck.id).size < 2) {
                 JOptionPane.showMessageDialog(this, "Il faut au moins 2 cartes pour lancer une session.", "Réviser", JOptionPane.WARNING_MESSAGE)
             } else {
                 StudyWindow(this, db, deck).isVisible = true
                 refresh()
             }
-        }
-        list.addMouseListener(object : java.awt.event.MouseAdapter() {
-            override fun mouseClicked(e: java.awt.event.MouseEvent) {
-                if (e.clickCount == 2) {
-                    val idx = list.locationToIndex(e.point)
-                    if (idx >= 0) askCard(listModel[idx])
-                }
-            }
         })
+        south.add(Fab { askCard(null) })
+        add(south, BorderLayout.SOUTH)
 
         refresh()
     }
 
     private fun refresh() {
-        val selected = list.selectedValue?.id
-        listModel.clear()
-        db.cards(deck.id).forEach { listModel.addElement(it) }
-        if (selected != null) {
-            for (i in 0 until listModel.size()) {
-                if (listModel[i].id == selected) { list.selectedIndex = i; break }
-            }
+        rowsPanel.removeAll()
+        val cards = db.cards(deck.id)
+        emptyLabel.isVisible = cards.isEmpty()
+        cards.forEach { rowsPanel.add(cardRow(it)); rowsPanel.add(javax.swing.Box.createVerticalStrut(10)) }
+        rowsPanel.revalidate()
+        rowsPanel.repaint()
+    }
+
+    private fun cardRow(card: Card): JPanel {
+        val row = RoundedPanel(14, M3.SURFACE, BorderLayout(10, 0)).apply {
+            borderColor = Color(0xEEEEEE)
         }
-        list.repaint()
+        val labels = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            isOpaque = false
+            add(JLabel(card.question).apply { font = M3.body.deriveFont(Font.BOLD, 14f) })
+            add(JLabel(card.answer).apply { font = M3.body; foreground = M3.ON_SURFACE_VARIANT })
+        }
+        val buttons = JPanel(FlowLayout(FlowLayout.RIGHT, 6, 0)).apply { isOpaque = false }
+        buttons.add(PillButton("Modifier", M3.PRIMARY_CONTAINER, M3.PRIMARY_DARK) { askCard(card) })
+        buttons.add(PillButton("Supprimer", Color(0xFBE9E7), M3.WRONG) { confirmDelete(card) })
+        row.add(labels, BorderLayout.CENTER)
+        row.add(buttons, BorderLayout.EAST)
+        row.border = BorderFactory.createEmptyBorder(12, 16, 12, 12)
+        return row
+    }
+
+    private fun confirmDelete(card: Card) {
+        val choice = JOptionPane.showConfirmDialog(
+            this, "Supprimer cette carte ?", "Supprimer",
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE
+        )
+        if (choice == JOptionPane.YES_OPTION) { db.deleteCard(card.id); refresh() }
     }
 
     private fun askCard(existing: Card?) {
         val qField = JTextField(if (existing != null) existing.question else "")
         val aField = JTextField(if (existing != null) existing.answer else "")
-        val panel = JPanel(GridBagLayout())
-        val gbc = GridBagConstraints().apply {
-            insets = Insets(6, 6, 6, 6)
-            fill = GridBagConstraints.HORIZONTAL
-            weightx = 1.0
+        val panel = JPanel(java.awt.GridBagLayout())
+        val gbc = java.awt.GridBagConstraints().apply {
+            insets = Insets(6, 6, 6, 6); fill = java.awt.GridBagConstraints.HORIZONTAL; weightx = 1.0
         }
         gbc.gridx = 0; gbc.gridy = 0; panel.add(JLabel("Question / Recto :"), gbc)
         gbc.gridx = 0; gbc.gridy = 1; panel.add(qField, gbc)
@@ -92,34 +136,6 @@ class DeckWindow(
                 if (existing == null) db.addCard(deck.id, q, a) else db.updateCard(existing.id, q, a)
                 refresh()
             }
-        }
-    }
-
-    private class CardRenderer : DefaultListCellRenderer() {
-        override fun getListCellRendererComponent(
-            list: JList<*>, value: Any?, index: Int, selected: Boolean, focused: Boolean
-        ): Component {
-            val card = value as Card
-            val panel = JPanel(BorderLayout(10, 0))
-            panel.isOpaque = true
-            panel.background = if (selected) Color(0xEADDFF) else Color.WHITE
-            val labels = JPanel(GridBagLayout())
-            labels.isOpaque = false
-            val gbc = GridBagConstraints().apply {
-                anchor = GridBagConstraints.WEST
-                fill = GridBagConstraints.HORIZONTAL
-                weightx = 1.0
-            }
-            gbc.gridx = 0; gbc.gridy = 0
-            labels.add(JLabel(card.question).apply { font = font.deriveFont(Font.BOLD, 14f) }, gbc)
-            gbc.gridx = 0; gbc.gridy = 1
-            labels.add(JLabel(card.answer).apply { font = font.deriveFont(13f); foreground = Color(0x49454F) }, gbc)
-            panel.add(labels, BorderLayout.CENTER)
-            panel.border = BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, Color(0xEEEEEE)),
-                BorderFactory.createEmptyBorder(8, 12, 8, 12)
-            )
-            return panel
         }
     }
 }

@@ -12,8 +12,10 @@ fun main(args: Array<String>) {
     }
 
     try {
-        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
-    } catch (_: Exception) { }
+        UIManager.setLookAndFeel("com.formdev.flatlaf.FlatIntelliJLaf")
+    } catch (_: Exception) {
+        try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) } catch (_: Exception) { }
+    }
 
     SwingUtilities.invokeLater {
         MainWindow().isVisible = true

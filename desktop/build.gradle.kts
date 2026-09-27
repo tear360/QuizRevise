@@ -8,6 +8,7 @@ version = (project.findProperty("appVersionName") as String?) ?: "1.1.0"
 dependencies {
     implementation("org.xerial:sqlite-jdbc:3.50.3.0")
     implementation("org.json:json:20240303")
+    implementation("com.formdev:flatlaf:3.7.2")
 }
 
 kotlin {

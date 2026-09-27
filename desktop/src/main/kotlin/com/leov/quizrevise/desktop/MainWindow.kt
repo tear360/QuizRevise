@@ -1,80 +1,134 @@
 package com.leov.quizrevise.desktop
 
-import java.awt.*
-import javax.swing.*
+import java.awt.BorderLayout
+import java.awt.Color
+import java.awt.Dimension
+import java.awt.FlowLayout
+import java.awt.Font
+import java.awt.GridBagLayout
+import java.awt.Insets
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import javax.swing.BorderFactory
+import javax.swing.BoxLayout
+import javax.swing.JFrame
+import javax.swing.JLabel
+import javax.swing.JMenuItem
+import javax.swing.JPopupMenu
+import javax.swing.JOptionPane
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.SwingConstants
+import javax.swing.SwingUtilities
 
-/** Fenêtre principale : liste des paquets, création, renommage, suppression, stats et mises à jour. */
+/** Fenêtre principale, style Material 3 : header violet, cartes arrondies, FAB. */
 class MainWindow : JFrame("QuizRévise") {
 
     private val db = DesktopDb()
-    private val listModel = DefaultListModel<Deck>()
-    private val list = JList(listModel)
-    private val renderer = DeckRenderer()
+    private lateinit var header: Header
+    private val rowsPanel = JPanel().apply {
+        layout = BoxLayout(this, BoxLayout.Y_AXIS)
+        isOpaque = false
+        border = BorderFactory.createEmptyBorder(16, 16, 8, 16)
+    }
+    private val emptyLabel = JLabel(
+        "<html><div style='text-align:center'>Aucun paquet pour l'instant.<br>Crée ton premier paquet pour commencer à réviser.</div></html>",
+        SwingConstants.CENTER
+    ).apply { foreground = M3.ON_SURFACE_VARIANT }
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
-        size = Dimension(560, 640)
-        minimumSize = Dimension(420, 480)
+        size = Dimension(620, 700)
+        minimumSize = Dimension(460, 540)
         setLocationRelativeTo(null)
-
-        val toolbar = JToolBar().apply { isFloatable = false }
-        val newBtn = JButton("＋ Nouveau paquet")
-        val statsBtn = JButton("📊 Statistiques")
-        val checkBtn = JButton("🔄 Rechercher les mises à jour")
-        val aboutBtn = JButton("ℹ️ À propos")
-        toolbar.add(newBtn)
-        toolbar.add(statsBtn)
-        toolbar.add(Box.createHorizontalGlue())
-        toolbar.add(checkBtn)
-        toolbar.add(aboutBtn)
-
-        list.cellRenderer = renderer
-        list.selectionMode = javax.swing.ListSelectionModel.SINGLE_SELECTION
-        list.fixedCellHeight = 52
-
-        val scroll = JScrollPane(list)
         layout = BorderLayout()
-        add(toolbar, BorderLayout.NORTH)
-        add(scroll, BorderLayout.CENTER)
 
-        newBtn.addActionListener { askNewDeck() }
-        statsBtn.addActionListener { showStats() }
-        checkBtn.addActionListener { checkUpdates(showError = true) }
-        aboutBtn.addActionListener { showAbout() }
+        header = Header("Mes paquets")
+        val actions = JPanel(FlowLayout(FlowLayout.RIGHT, 6, 0)).apply { isOpaque = false }
+        actions.add(smallPill("📊", "Statistiques") { showStats() })
+        actions.add(smallPill("🔄", "Rechercher les mises à jour") { checkUpdates(showError = true) })
+        actions.add(smallPill("ℹ️", "À propos") { showAbout() })
+        header.add(actions, BorderLayout.EAST)
+        add(header, BorderLayout.NORTH)
 
-        list.addMouseListener(object : java.awt.event.MouseAdapter() {
-            override fun mouseClicked(e: java.awt.event.MouseEvent) {
-                if (e.clickCount == 2) openSelected()
-            }
-        })
-        list.addKeyListener(object : java.awt.event.KeyAdapter() {
-            override fun keyPressed(e: java.awt.event.KeyEvent) {
-                if (e.keyCode == java.awt.event.KeyEvent.VK_ENTER) openSelected()
-            }
-        })
+        val scroll = JScrollPane(rowsPanel).apply {
+            border = null
+            verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
+            horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+            viewport.background = M3.BACKGROUND
+            background = M3.BACKGROUND
+        }
+
+        val center = JPanel(BorderLayout()).apply { background = M3.BACKGROUND }
+        center.add(emptyLabel, BorderLayout.NORTH)
+        center.add(scroll, BorderLayout.CENTER)
+        add(center, BorderLayout.CENTER)
+
+        val south = JPanel(FlowLayout(FlowLayout.TRAILING, 28, 20)).apply { isOpaque = false }
+        south.add(Fab { askNewDeck() })
+        add(south, BorderLayout.SOUTH)
 
         refresh()
-        // Vérification discrète des mises à jour à l'ouverture
         SwingUtilities.invokeLater { checkUpdates(showError = false) }
     }
 
-    private fun refresh() {
-        val selected = selectedDeck()?.id
-        listModel.clear()
-        db.decks().forEach { listModel.addElement(it) }
-        if (selected != null) {
-            for (i in 0 until listModel.size()) {
-                if (listModel[i].id == selected) { list.selectedIndex = i; break }
-            }
+    private fun smallPill(text: String, tip: String, onClick: () -> Unit) =
+        PillButton(text, M3.PRIMARY_DARK, Color.WHITE).apply {
+            toolTipText = tip
+            font = Font("Segoe UI", Font.PLAIN, 13)
+            putClientProperty("onClick", onClick)
+            addActionListener { onClick() }
+            preferredSize = Dimension(46, 36)
         }
-        renderer.emptyVisible = listModel.isEmpty
-        list.repaint()
+
+    private fun refresh() {
+        rowsPanel.removeAll()
+        val decks = db.decks()
+        emptyLabel.isVisible = decks.isEmpty()
+        decks.forEach { deck -> rowsPanel.add(deckRow(deck)) ; rowsPanel.add(javax.swing.Box.createVerticalStrut(10)) }
+        rowsPanel.revalidate()
+        rowsPanel.repaint()
     }
 
-    private fun selectedDeck(): Deck? = list.selectedValue
+    private fun deckRow(deck: Deck): JPanel {
+        val row = RoundedPanel(16, M3.SURFACE, BorderLayout(16, 0)).apply {
+            borderColor = Color(0xEEEEEE)
+            cursor = java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR)
+        }
+        val dot = RoundedPanel(10, Color(deck.color), GridBagLayout()).apply {
+            preferredSize = Dimension(42, 42)
+        }
+        val labels = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            isOpaque = false
+            val name = JLabel(deck.name).apply { font = M3.body.deriveFont(Font.BOLD, 15f) }
+            val count = JLabel("${deck.cardCount} cartes").apply { font = M3.caption; foreground = M3.ON_SURFACE_VARIANT }
+            add(name); add(count)
+        }
+        row.add(dot, BorderLayout.WEST)
+        row.add(labels, BorderLayout.CENTER)
+        row.border = BorderFactory.createEmptyBorder(12, 16, 12, 16)
+        row.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent) {
+                if (SwingUtilities.isLeftMouseButton(e)) openDeck(deck)
+                if (SwingUtilities.isRightMouseButton(e)) showRowMenu(e, deck)
+            }
+        })
+        return row
+    }
 
-    private fun openSelected() {
-        val deck = selectedDeck() ?: return
+    private fun showRowMenu(e: MouseEvent, deck: Deck) {
+        val menu = JPopupMenu()
+        val rename = JMenuItem("Renommer")
+        rename.addActionListener { renameDeck(deck) }
+        val delete = JMenuItem("Supprimer")
+        delete.addActionListener { confirmDelete(deck) }
+        menu.add(rename)
+        menu.add(delete)
+        menu.show(e.component, e.x, e.y)
+    }
+
+    private fun openDeck(deck: Deck) {
         DeckWindow(this, db, deck).isVisible = true
         refresh()
     }
@@ -92,6 +146,19 @@ class MainWindow : JFrame("QuizRévise") {
             db.createDeck(name, colors[db.decks().size % colors.size])
             refresh()
         }
+    }
+
+    private fun renameDeck(deck: Deck) {
+        val name = JOptionPane.showInputDialog(this, "Nouveau nom :", "Renommer", JOptionPane.PLAIN_MESSAGE, null, null, deck.name) as? String
+        if (!name.isNullOrBlank()) { db.renameDeck(deck.id, name.trim()); refresh() }
+    }
+
+    private fun confirmDelete(deck: Deck) {
+        val choice = JOptionPane.showConfirmDialog(
+            this, "Supprimer « ${deck.name} » et toutes ses cartes ?", "Supprimer",
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE
+        )
+        if (choice == JOptionPane.YES_OPTION) { db.deleteDeck(deck.id); refresh() }
     }
 
     private fun showStats() {
@@ -128,10 +195,9 @@ class MainWindow : JFrame("QuizRévise") {
                         JOptionPane.showMessageDialog(this, "Impossible de vérifier les mises à jour (connexion ?).", "Mises à jour", JOptionPane.WARNING_MESSAGE)
                     }
                     GitHubUpdater.isNewer(release.version, current) -> {
-                        val assetHint = if (release.downloadUrl != null) "\n\nUn fichier pour votre système est disponible." else ""
                         val choice = JOptionPane.showConfirmDialog(
                             this,
-                            "La version ${release.version} est disponible (vous avez la $current).$assetHint\n\nOuvrir la page de téléchargement ?",
+                            "La version ${release.version} est disponible (vous avez la $current).\n\nOuvrir la page de téléchargement ?",
                             "Mise à jour disponible", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE
                         )
                         if (choice == JOptionPane.YES_OPTION) GitHubUpdater.openDownloadPage(release.pageUrl)
@@ -140,33 +206,5 @@ class MainWindow : JFrame("QuizRévise") {
                 }
             }
         }.start()
-    }
-
-    private class DeckRenderer : DefaultListCellRenderer() {
-        var emptyVisible = false
-        override fun getListCellRendererComponent(
-            list: JList<*>, value: Any?, index: Int, selected: Boolean, focused: Boolean
-        ): Component {
-            val deck = value as Deck
-            val panel = JPanel(BorderLayout(12, 0))
-            panel.isOpaque = true
-            panel.background = if (selected) Color(0xEADDFF) else Color.WHITE
-            val dot = JPanel()
-            dot.preferredSize = Dimension(28, 28)
-            dot.background = Color(deck.color)
-            panel.add(dot, BorderLayout.WEST)
-            val labels = JPanel(GridLayout(2, 1))
-            val name = JLabel(deck.name).apply { font = font.deriveFont(Font.BOLD, 15f) }
-            val count = JLabel("${deck.cardCount} cartes").apply { font = font.deriveFont(12f); foreground = Color(0x49454F) }
-            labels.isOpaque = false
-            labels.add(name)
-            labels.add(count)
-            panel.add(labels, BorderLayout.CENTER)
-            panel.border = BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, Color(0xEEEEEE)),
-                BorderFactory.createEmptyBorder(8, 10, 8, 10)
-            )
-            return panel
-        }
     }
 }

@@ -14,6 +14,8 @@ struct StudyView: View {
     @State private var quizOptions: [String] = []
     @State private var selectedOption: String?
     @State private var delayTask: DispatchWorkItem?
+    @State private var flipAngle: Double = 0
+    @State private var flipAnimating = false
 
     private var currentCard: Card { cards[order[pos]] }
 
@@ -83,7 +85,20 @@ struct StudyView: View {
                 .shadow(radius: 4)
         )
         .padding()
-        .onTapGesture { if !revealed { revealed = true } }
+        .rotation3DEffect(.degrees(flipAngle), axis: (x: 0, y: 1, z: 0), perspective: 0.8)
+        .onTapGesture { flip() }
+    }
+
+    /// Retournement illimité : rotation 3D, le contenu bascule à 90°.
+    private func flip() {
+        guard !flipAnimating else { return }
+        flipAnimating = true
+        withAnimation(.easeIn(duration: 0.18)) { flipAngle = 90 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            revealed.toggle()
+            withAnimation(.easeOut(duration: 0.18)) { flipAngle = 0 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { flipAnimating = false }
+        }
     }
 
     private var quizCard: some View {
@@ -132,6 +147,7 @@ struct StudyView: View {
         let task = DispatchWorkItem {
             pos += 1
             revealed = false
+            flipAngle = 0
             selectedOption = nil
             if pos >= order.count {
                 onFinish(order.count, correct)

@@ -1,14 +1,27 @@
 package com.leov.quizrevise.desktop
 
-import java.awt.*
-import javax.swing.*
+import java.awt.BorderLayout
+import java.awt.Color
+import java.awt.Dimension
+import java.awt.Font
+import java.awt.GridLayout
+import javax.swing.BorderFactory
+import javax.swing.Box
+import javax.swing.BoxLayout
+import javax.swing.JButton
+import javax.swing.JDialog
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.JProgressBar
+import javax.swing.SwingConstants
+import javax.swing.Timer
 
-/** Fenêtre de révision : flashcards (je savais / pas su) et QCM (4 choix), puis écran de score. */
+/** Fenêtre de révision Material 3 : choix de mode, flashcards animées, QCM, score. */
 class StudyWindow(
-    owner: JDialog,
+    owner: java.awt.Window,
     private val db: DesktopDb,
     private val deck: Deck
-) : JDialog(owner, "Révision — ${deck.name}", true) {
+) : JDialog(owner as? java.awt.Frame, "Révision — ${deck.name}", true) {
 
     private val deckCards = db.cards(deck.id)
     private var order: List<Int> = emptyList()
@@ -18,74 +31,95 @@ class StudyWindow(
     private var currentAnswer = ""
     private var quizOptionButtons: List<JButton> = emptyList()
 
-    private val cardPanel = JPanel(GridBagLayout()).apply {
-        background = Color.WHITE
-        border = BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color(0x79747E), 1, true),
-            BorderFactory.createEmptyBorder(24, 24, 24, 24)
-        )
+    private val header = Header("Révision — ${deck.name}")
+    private val progress = JProgressBar(0, 100).apply {
+        foreground = M3.PRIMARY
+        border = BorderFactory.createEmptyBorder()
+        preferredSize = Dimension(100, 6)
     }
-    private val sideLabel = JLabel("QUESTION", SwingConstants.CENTER).apply { foreground = Color(0x6750A4) }
-    private val cardText = JLabel("", SwingConstants.CENTER).apply { font = font.deriveFont(Font.BOLD, 24f) }
-    private val hintLabel = JLabel("Touche la carte pour la retourner", SwingConstants.CENTER).apply { foreground = Color(0x79747E) }
-    private val flashButtons = JPanel(FlowLayout(FlowLayout.CENTER, 12, 8))
-    private val quizButtons = JPanel(GridLayout(2, 2, 8, 8))
-    private val progress = JProgressBar()
-    private val progressText = JLabel("", SwingConstants.CENTER)
-    private val modeButtons = JPanel(FlowLayout(FlowLayout.CENTER, 12, 16))
+    private val progressText = JLabel("", SwingConstants.CENTER).apply {
+        font = M3.caption; foreground = M3.ON_SURFACE_VARIANT
+    }
+
+    private val cardArea = JPanel()
+    private val flipCard = FlipCard { showFlashButtons -> flashButtons.isVisible = showFlashButtons }
+    private val modeChoice = JPanel().apply {
+        layout = BoxLayout(this, BoxLayout.Y_AXIS)
+        isOpaque = false
+        border = BorderFactory.createEmptyBorder(48, 40, 48, 40)
+    }
+    private val quizQuestion = JLabel("", SwingConstants.CENTER).apply {
+        font = M3.cardText.deriveFont(22f); foreground = M3.ON_SURFACE
+    }
+    private val quizButtons = JPanel(GridLayout(2, 2, 8, 8)).apply { isOpaque = false }
+    private val quizPanel = JPanel(BorderLayout()).apply {
+        isOpaque = false
+        add(quizQuestion, BorderLayout.CENTER)
+        add(quizButtons, BorderLayout.SOUTH)
+    }
+    private val flashButtons = JPanel(java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 12, 8)).apply {
+        isOpaque = false
+        add(PillButton("Pas su", M3.WRONG, Color.WHITE) { answer(false) })
+        add(PillButton("Je savais", M3.CORRECT, Color.WHITE) { answer(true) })
+        isVisible = false
+    }
 
     init {
-        size = Dimension(600, 520)
+        size = Dimension(680, 620)
         setLocationRelativeTo(owner)
         layout = BorderLayout()
+        background = M3.BACKGROUND
 
-        cardPanel.layout = GridBagLayout()
-        val gbc = GridBagConstraints().apply {
-            gridx = 0; fill = GridBagConstraints.HORIZONTAL; weightx = 1.0
+        val back = PillButton("←", M3.PRIMARY_DARK, Color.WHITE).apply {
+            preferredSize = Dimension(46, 36)
+            font = Font("Segoe UI", Font.PLAIN, 14)
+            addActionListener { dispose() }
         }
-        gbc.gridy = 0; cardPanel.add(sideLabel, gbc)
-        gbc.gridy = 1; gbc.insets = Insets(16, 0, 0, 0); cardPanel.add(cardText, gbc)
-        gbc.gridy = 2; gbc.insets = Insets(20, 0, 0, 0); cardPanel.add(hintLabel, gbc)
-        cardPanel.addMouseListener(object : java.awt.event.MouseAdapter() {
-            override fun mouseClicked(e: java.awt.event.MouseEvent) {
-                if (mode == "flash" && sideLabel.text == "QUESTION") reveal()
-            }
-        })
+        header.add(back, BorderLayout.WEST)
+        add(header, BorderLayout.NORTH)
 
-        val knew = JButton("Je savais").apply { background = Color(0x1B873B); foreground = Color.WHITE; isOpaque = true; isBorderPainted = false }
-        val didnt = JButton("Pas su").apply { background = Color(0xB3261E); foreground = Color.WHITE; isOpaque = true; isBorderPainted = false }
-        knew.addActionListener { answer(true) }
-        didnt.addActionListener { answer(false) }
-        flashButtons.add(didnt)
-        flashButtons.add(knew)
-        flashButtons.isVisible = false
+        cardArea.layout = java.awt.CardLayout()
+        cardArea.isOpaque = false
+        cardArea.add(modeChoice, "mode")
+        cardArea.add(flipCard, "flip")
+        cardArea.add(quizPanel, "quiz")
 
-        quizButtons.isVisible = false
-
-        val flashMode = JButton("🃏 Flashcards")
-        val quizMode = JButton("❓ QCM")
-        modeButtons.add(flashMode)
-        modeButtons.add(quizMode)
-        flashMode.addActionListener { startSession("flash") }
-        quizMode.addActionListener { startSession("quiz") }
-
-        val center = JPanel(BorderLayout())
-        val southStack = JPanel(BorderLayout())
-        southStack.add(flashButtons, BorderLayout.NORTH)
-        southStack.add(quizButtons, BorderLayout.CENTER)
-        center.add(cardPanel, BorderLayout.CENTER)
-        center.add(southStack, BorderLayout.SOUTH)
-
-        add(modeButtons, BorderLayout.NORTH)
+        val center = JPanel(BorderLayout()).apply {
+            background = M3.BACKGROUND
+            border = BorderFactory.createEmptyBorder(16, 24, 12, 24)
+            add(progressText, BorderLayout.NORTH)
+            add(cardArea, BorderLayout.CENTER)
+        }
         add(center, BorderLayout.CENTER)
-        add(buildSouthPanel(), BorderLayout.SOUTH)
+
+        val south = JPanel(BorderLayout()).apply {
+            isOpaque = false
+            border = BorderFactory.createEmptyBorder(0, 24, 16, 24)
+            add(flashButtons, BorderLayout.NORTH)
+            add(progress, BorderLayout.SOUTH)
+        }
+        add(south, BorderLayout.SOUTH)
+
+        showModeChoice()
     }
 
-    private fun buildSouthPanel(): JPanel {
-        val south = JPanel(BorderLayout())
-        south.add(progressText, BorderLayout.NORTH)
-        south.add(progress, BorderLayout.SOUTH)
-        return south
+    private fun switchTo(name: String) {
+        (cardArea.layout as java.awt.CardLayout).show(cardArea, name)
+    }
+
+    private fun showModeChoice() {
+        modeChoice.removeAll()
+        modeChoice.add(JLabel("Comment veux-tu réviser ?").apply { font = M3.title; alignmentX = CENTER_ALIGNMENT })
+        modeChoice.add(Box.createVerticalStrut(28))
+        modeChoice.add(PillButton("🃏 Flashcards", M3.PRIMARY, Color.WHITE) { startSession("flash") }.apply { alignmentX = CENTER_ALIGNMENT })
+        modeChoice.add(Box.createVerticalStrut(14))
+        modeChoice.add(PillButton("❓ QCM", M3.PRIMARY, Color.WHITE) { startSession("quiz") }.apply { alignmentX = CENTER_ALIGNMENT })
+        modeChoice.isVisible = true
+        switchTo("mode")
+        progress.isVisible = false
+        progressText.isVisible = false
+        flashButtons.isVisible = false
+        quizButtons.isVisible = false
     }
 
     private fun startSession(m: String) {
@@ -95,56 +129,47 @@ class StudyWindow(
         correctCount = 0
         progress.maximum = order.size
         progress.value = 0
-        modeButtons.isVisible = false
+        progress.isVisible = true
+        progressText.isVisible = true
         showQuestion()
     }
 
     private fun showQuestion() {
         val card = deckCards[order[pos]]
         currentAnswer = card.answer
-        sideLabel.text = "QUESTION"
-        cardText.text = card.question
-        hintLabel.text = if (mode == "flash") "Touche la carte pour la retourner" else ""
         progressText.text = "${pos + 1} / ${order.size}"
-        flashButtons.isVisible = false
-        if (mode == "quiz") {
+        progress.value = pos
+
+        if (mode == "flash") {
+            flashButtons.isVisible = false
+            quizButtons.isVisible = false
+            flipCard.setCard(card.question, card.answer)
+            switchTo("flip")
+        } else {
+            quizQuestion.text = card.question
             quizButtons.removeAll()
             val distractors = deckCards.map { it.answer }.filter { it != currentAnswer }.distinct().shuffled().take(3)
             val options = (distractors + currentAnswer).shuffled()
             quizOptionButtons = options.map { opt ->
-                JButton(opt).apply {
-                    isOpaque = true; isBorderPainted = false
-                    background = Color(0x6750A4); foreground = Color.WHITE
-                    addActionListener { onQuizAnswer(this, opt) }
+                PillButton(opt, M3.PRIMARY, Color.WHITE).also { btn ->
+                    btn.addActionListener { onQuizAnswer(btn, opt) }
+                    btn.horizontalAlignment = SwingConstants.CENTER
                 }
             }
             quizOptionButtons.forEach { quizButtons.add(it) }
-            quizButtons.revalidate()
-            quizButtons.repaint()
             quizButtons.isVisible = true
-        } else {
-            quizButtons.isVisible = false
+            quizButtons.revalidate(); quizButtons.repaint()
+            switchTo("quiz")
         }
-        centerPanel().revalidate()
-        centerPanel().repaint()
-    }
-
-    private fun centerPanel(): JPanel = contentPane.getComponent(1) as JPanel
-
-    private fun reveal() {
-        sideLabel.text = "RÉPONSE"
-        cardText.text = currentAnswer
-        hintLabel.text = ""
-        flashButtons.isVisible = true
     }
 
     private fun onQuizAnswer(button: JButton, choice: String) {
         if (choice == currentAnswer) {
-            button.background = Color(0x1B873B)
+            button.background = M3.CORRECT
             answer(true)
         } else {
-            button.background = Color(0xB3261E)
-            quizOptionButtons.filter { it.text == currentAnswer }.forEach { it.background = Color(0x1B873B) }
+            button.background = M3.WRONG
+            quizOptionButtons.filter { it.text == currentAnswer }.forEach { it.background = M3.CORRECT }
             answer(false)
         }
         quizOptionButtons.forEach { it.isEnabled = false }
@@ -154,26 +179,29 @@ class StudyWindow(
         if (ok) correctCount++
         pos++
         progress.value = pos
-        javax.swing.Timer(700) {
+        Timer(650) {
             if (pos >= order.size) finishSession() else showQuestion()
         }.apply { isRepeats = false }.start()
     }
 
     private fun finishSession() {
         db.recordSession(order.size, correctCount)
-        cardPanel.removeAll()
-        val gbc = GridBagConstraints().apply { gridx = 0; fill = GridBagConstraints.HORIZONTAL; weightx = 1.0 }
-        gbc.gridy = 0; cardPanel.add(JLabel("Session terminée !", SwingConstants.CENTER).apply { font = font.deriveFont(Font.BOLD, 24f) }, gbc)
-        gbc.gridy = 1; gbc.insets = Insets(16, 0, 0, 0)
-        cardPanel.add(JLabel("Score : $correctCount / ${order.size} (${correctCount * 100 / order.size}%)", SwingConstants.CENTER).apply {
-            font = font.deriveFont(Font.BOLD, 20f); foreground = Color(0x6750A4)
-        }, gbc)
-        gbc.gridy = 2; gbc.insets = Insets(24, 0, 0, 0)
-        cardPanel.add(JButton("Recommencer").apply { addActionListener { startSession(mode) } }, gbc)
-        cardPanel.revalidate()
-        cardPanel.repaint()
         flashButtons.isVisible = false
         quizButtons.isVisible = false
-        progressText.text = ""
+        progress.isVisible = false
+        progressText.text = "Session terminée !"
+        modeChoice.removeAll()
+        modeChoice.add(JLabel("Session terminée !").apply { font = M3.title; alignmentX = CENTER_ALIGNMENT })
+        modeChoice.add(Box.createVerticalStrut(12))
+        modeChoice.add(JLabel("Score : $correctCount / ${order.size} (${correctCount * 100 / order.size}%)").apply {
+            font = M3.cardText.deriveFont(20f); foreground = M3.PRIMARY; alignmentX = CENTER_ALIGNMENT
+        })
+        modeChoice.add(Box.createVerticalStrut(24))
+        modeChoice.add(PillButton("Recommencer", M3.PRIMARY, Color.WHITE) { startSession(mode) }.apply { alignmentX = CENTER_ALIGNMENT })
+        modeChoice.add(Box.createVerticalStrut(10))
+        modeChoice.add(PillButton("Retour au paquet", M3.PRIMARY_CONTAINER, M3.PRIMARY_DARK) { dispose() }.apply { alignmentX = CENTER_ALIGNMENT })
+        modeChoice.isVisible = true
+        switchTo("mode")
+        modeChoice.revalidate(); modeChoice.repaint()
     }
 }

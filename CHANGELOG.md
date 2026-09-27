@@ -4,6 +4,13 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.2.0] - 2026-09-27
+
+### Améliorations
+- 🖥️ **Interface desktop refonte** (Windows/Linux) fidèle au design Material 3 d'Android : header violet, cartes arrondies, boutons pill, FAB violet, look FlatLaf
+- 🃏 **Retournement illimité des flashcards** : appuie autant de fois que tu veux pour alterner question ↔ réponse
+- ✨ **Vraie animation de retournement** (rotation 3D) sur Android, iOS et desktop — fini le simple changement de texte
+
 ## [1.1.1] - 2026-09-27
 
 ### Améliorations
