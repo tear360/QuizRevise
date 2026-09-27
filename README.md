@@ -5,7 +5,7 @@ Application de révision type **Quizlet**, multi-plateformes : crée tes paquets
 | Plateforme | Paquet publié | Mise à jour |
 |---|---|---|
 | 🤖 **Android 5.0 → 16** | `QuizRevise-Android-vX.apk` (universel : arm32/64, x86) | ✅ **Automatique in-app** via GitHub Releases |
-| 🪟 **Windows 10/11** | `QuizRevise-Windows-vX.zip` (JRE embarqué, rien à installer) | 🔎 Vérification intégrée → ouvre la page des releases |
+| 🪟 **Windows 10/11** | `QuizRevise-Setup-vX.exe` (installateur natif : raccourcis, désinstallation, JRE embarqué) | 🔎 Vérification intégrée → ouvre la page des releases |
 | 🐧 **Linux** Debian/Ubuntu/Mint | `QuizRevise-Linux-deb-vX.deb` | 🔎 Vérification intégrée |
 | 🐧 **Linux** Fedora & autres | `QuizRevise-Linux-vX.tar.gz` | 🔎 Vérification intégrée |
 | 🍎 **iOS 15+** | `QuizRevise-iOS-unsigned-vX.ipa` (non signée, à sideloader) | 🔎 Vérification intégrée → ouvre la page (contrainte Apple) |
@@ -27,9 +27,10 @@ Application de révision type **Quizlet**, multi-plateformes : crée tes paquets
 Télécharge l'APK depuis la page [Releases](https://github.com/tear360/QuizRevise/releases/latest) et ouvre-le sur ton téléphone (autorise l'installation d'apps inconnues si demandé). Les mises à jour suivantes se font **directement dans l'app** : menu ⋮ → « Rechercher les mises à jour » (vérification silencieuse aussi à chaque ouverture).
 
 ### 🪟 Windows 10/11
-1. Télécharge `QuizRevise-Windows-vX.zip` et décompresse-le où tu veux
-2. Lance `QuizRevise\QuizRevise.exe`
-3. Aucune installation : un JRE est **embarqué** dans le dossier
+1. Télécharge `QuizRevise-Setup-vX.exe` et lance-le : l'app **s'installe dans le système** (répertoire au choix), crée un **raccourci sur le Bureau** et une entrée dans le **menu Démarrer**
+2. Désinstalle-la comme n'importe quelle application (Paramètres → Applications)
+3. Un JRE est **embarqué** : rien d'autre à installer. L'installateur n'étant pas signé, SmartScreen peut afficher un avertissement — clique « Exécuter quand même »
+> Les versions futures se remplacent automatiquement (même produit d'installation). Tes données (dans `%APPDATA%\QuizRevise`) sont conservées.
 
 ### 🐧 Linux
 **Debian / Ubuntu / Mint :**

@@ -4,6 +4,17 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.3.0] - 2026-09-27
+
+### Ajouts
+- 🪟 **Vrai installateur Windows `.exe`** : installe l'application dans le système, crée les raccourcis **Bureau** et **menu Démarrer**, avec désinstallation depuis les réglages Windows (JRE embarqué, rien d'autre à installer)
+- 🐧 Le paquet `.deb` Linux installe désormais l'**icône** de l'app dans le menu des applications
+- Les futures versions Windows se remplacent automatiquement (produit d'installation stable)
+
+### Technique
+- `jpackage --type exe` avec WiX 3.14 en CI ; UUID produit fixe pour les mises à jour par-dessus l'existant
+- Icônes `.ico` / `.png` générées depuis le même design que l'app Android (`tools/GenIco.java`)
+
 ## [1.2.0] - 2026-09-27
 
 ### Améliorations

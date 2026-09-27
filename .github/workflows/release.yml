@@ -53,7 +53,9 @@ jobs:
           path: QuizRevise-Android-*.apk
 
   # ------------------------------------------------------------
-  # Windows 10/11 : application autonome (JRE embarqué via jpackage)
+  # Windows 10/11 : INSTALLATEUR .exe (WiX) — installe l'app dans
+  # le système, crée les raccourcis Bureau + menu Démarrer,
+  # entrée « Applications » pour la désinstallation, JRE embarqué
   # ------------------------------------------------------------
   windows:
     runs-on: windows-latest
@@ -70,27 +72,39 @@ jobs:
       - name: Compute version
         shell: bash
         run: |
-          if [[ "$GITHUB_REF_NAME" == v* ]]; then VERSION="${GITHUB_REF_NAME#v}"; else VERSION="1.1.${GITHUB_RUN_NUMBER}"; fi
+          if [[ "$GITHUB_REF_NAME" == v* ]]; then VERSION="${GITHUB_REF_NAME#v}"; else VERSION="1.3.${GITHUB_RUN_NUMBER}"; fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Install WiX 3.14 (requis par jpackage --type exe)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip" -OutFile wix-bin.zip
+          Expand-Archive -Path wix-bin.zip -DestinationPath wix314-binaries
 
       - name: Build fat jar
         shell: pwsh
         run: ./gradlew.bat :desktop:jar --no-daemon "-PappVersionName=${{ env.VERSION }}"
 
-      - name: Package with jpackage (app-image)
+      - name: Build Windows installer (.exe)
         shell: pwsh
         run: |
           Copy-Item "desktop/build/libs/desktop-${{ env.VERSION }}.jar" "desktop/build/libs/quizrevise.jar"
-          & "$env:JAVA_HOME/bin/jpackage.exe" --type app-image --name QuizRevise `
-            --app-version "${{ env.VERSION }}" --input "desktop/build/libs" `
-            --main-jar quizrevise.jar --dest dist
-          Compress-Archive -Path "dist/QuizRevise" -DestinationPath "QuizRevise-Windows-v${{ env.VERSION }}.zip"
+          $env:PATH = "$PWD/wix314-binaries;$env:PATH"
+          & "$env:JAVA_HOME/bin/jpackage.exe" --type exe --name QuizRevise `
+            --app-version "${{ env.VERSION }}" --vendor LeoV `
+            --description "App de révision type Quizlet : flashcards, QCM, stats" `
+            --input "desktop/build/libs" --main-jar quizrevise.jar `
+            --icon desktop/quizrevise.ico `
+            --win-menu --win-shortcut --win-dir-chooser `
+            --win-upgrade-uuid 381c7875-31dc-41ec-a229-5a40fcf556f0 `
+            --dest dist
+          Move-Item "dist/QuizRevise-${{ env.VERSION }}.exe" "QuizRevise-Setup-v${{ env.VERSION }}.exe"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: QuizRevise-Windows-*.zip
+          path: QuizRevise-Setup-*.exe
 
   # ------------------------------------------------------------
   # Linux : .deb (Debian/Ubuntu/Mint) + archive générique (Fedora & co)
@@ -120,14 +134,16 @@ jobs:
           cp "desktop/build/libs/desktop-${{ env.VERSION }}.jar" "desktop/build/libs/quizrevise.jar"
           "$JAVA_HOME/bin/jpackage" --type app-image --name QuizRevise \
             --app-version "${{ env.VERSION }}" --input desktop/build/libs \
-            --main-jar quizrevise.jar --dest dist
+            --main-jar quizrevise.jar --icon desktop/quizrevise.png --dest dist
           tar -czf "QuizRevise-Linux-v${{ env.VERSION }}.tar.gz" -C dist QuizRevise
 
       - name: Package .deb (Debian/Ubuntu/Mint)
         run: |
           "$JAVA_HOME/bin/jpackage" --type deb --name quizrevise \
-            --app-version "${{ env.VERSION }}" --input desktop/build/libs \
-            --main-jar quizrevise.jar --dest dist-deb
+            --app-version "${{ env.VERSION }}" --vendor LeoV \
+            --description "App de révision type Quizlet : flashcards, QCM, stats" \
+            --input desktop/build/libs \
+            --main-jar quizrevise.jar --icon desktop/quizrevise.png --dest dist-deb
           mv dist-deb/*.deb "QuizRevise-Linux-deb-v${{ env.VERSION }}.deb"
 
       - name: Upload artifacts
