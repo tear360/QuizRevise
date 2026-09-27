@@ -4,6 +4,17 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.4.0] - 2026-09-27
+
+### Ajouts
+- 🖥️ **Interface desktop entièrement refonte en HTML/CSS** (rendue par un WebView) : même design Material 3 que l'app Android, flipcard en **vraie 3D CSS**, boutons pill, FAB, dialogues modernes — fini les polices en carrés
+- 📦 **Format d'échange `.qrevise`** : exporte/importe tes paquets entre **tous tes appareils** (Windows ↔ Android ↔ iPhone ↔ Linux) sans perte — nom, couleur et cartes conservés, JSON versionné et lisible
+- 📱 Android : export par appui long sur un paquet + import/export global dans le menu ⋮
+- 🍎 iOS : import via le sélecteur Fichiers, export via la feuille de partage (AirDrop, mail…)
+
+### Technique
+- Desktop : migration Swing → WebView JavaFX (WebKit embarqué), pont JS ↔ Kotlin synchrone, tests round-trip `.qrevise` dans le selftest
+
 ## [1.3.0] - 2026-09-27
 
 ### Ajouts
