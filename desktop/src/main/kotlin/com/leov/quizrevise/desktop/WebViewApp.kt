@@ -48,6 +48,8 @@ object DesktopUi {
             DesktopUi::class.java.getResourceAsStream("/quizrevise.png")?.let { stage.icons.add(Image(it)) }
         } catch (_: Exception) { }
 
+        engine.setOnError { err -> System.err.println("QuizRevise WebEngine error: ${err.message}") }
+
         engine.loadWorker.stateProperty().addListener(
             object : ChangeListener<Worker.State> {
                 override fun changed(
@@ -56,11 +58,18 @@ object DesktopUi {
                     state: Worker.State
                 ) {
                     if (state == Worker.State.SUCCEEDED) {
-                        (engine.executeScript("window") as JSObject)
-                            .setMember("QuizReviseNative", NativeApi(engine))
-                        // La page n'affiche rien tant que nativeReady() n'est pas appelé :
-                        // garantit que le pont existe avant le premier rendu.
-                        engine.executeScript("nativeReady && nativeReady()")
+                        try {
+                            (engine.executeScript("window") as JSObject)
+                                .setMember("QuizReviseNative", NativeApi(engine))
+                            // La page n'affiche rien tant que nativeReady() n'est pas appelé.
+                            engine.executeScript("nativeReady && nativeReady()")
+                            val st = engine.executeScript(
+                                "(function(){try{return document.getElementById('main').innerHTML.length>0?'RENDER_OK':'RENDER_EMPTY'}catch(e){return 'JS_ERR: '+e.message}})()"
+                            )
+                            println("QuizRevise UI: $st")
+                        } catch (e: Exception) {
+                            System.err.println("QuizRevise nativeReady error: ${e.message}")
+                        }
                     }
                 }
             }
@@ -89,8 +98,11 @@ object DesktopUi {
         stage.show()
     }
 
-    /** API exposée au JavaScript (synchrone, appelée depuis le thread FX). */
-    private class NativeApi(private val engine: WebEngine) {
+    /**
+     * API exposée au JavaScript. ATTENTION : la classe DOIT être publique,
+     * sinon le pont JSObject échoue silencieusement (page bloquée sur « Chargement… »).
+     */
+    class NativeApi(private val engine: WebEngine) {
         companion object {
             var stageRef: Stage? = null
         }
@@ -130,34 +142,44 @@ object DesktopUi {
 
         fun recordSession(total: Int, correct: Int) = db.recordSession(total, correct)
 
-        /** Exporte un paquet (deckId>0) ou tout (deckId<=0) vers un fichier .qrevise choisi par l'utilisateur. Renvoie true si exporté. */
-        fun exportFile(deckId: Long, suggestedName: String): Boolean {
-            val chooser = FileChooser().apply {
-                title = "Exporter le paquet"
-                extensionFilters.add(FileChooser.ExtensionFilter("Paquet QuizRévise (*.qrevise)", "*.qrevise"))
-                initialFileName = suggestedName.ifBlank { "paquet" }
-                    .replace(Regex("[\\\\/:*?\"<>|]"), "_") + ".qrevise"
+        /**
+         * Exporte un paquet (deckId>0) ou tout (deckId<=0). Asynchrone : les boîtes de
+         * dialogue ne doivent pas être ouvertes depuis le callback JS du WebView,
+         * sinon le résultat est faux. Le résultat arrive au JS via exportDone(ok).
+         */
+        fun exportFile(deckId: Long, suggestedName: String) {
+            Platform.runLater {
+                val chooser = FileChooser().apply {
+                    title = "Exporter le paquet"
+                    extensionFilters.add(FileChooser.ExtensionFilter("Paquet QuizRévise (*.qrevise)", "*.qrevise"))
+                    initialFileName = suggestedName.ifBlank { "paquet" }
+                        .replace(Regex("[\\\\/:*?\"<>|]"), "_") + ".qrevise"
+                }
+                val file = chooser.showSaveDialog(stageRef)
+                if (file == null) { callJsSafe("exportDone(false)"); return@runLater }
+                val json = if (deckId > 0) Transfer.exportDeckJson(db, deckId) else Transfer.exportAllJson(db)
+                val ok = try {
+                    file.writeText(json, Charsets.UTF_8); true
+                } catch (_: Exception) { false }
+                callJsSafe("exportDone($ok)")
             }
-            val file = chooser.showSaveDialog(stageRef) ?: return false
-            val json = if (deckId > 0) Transfer.exportDeckJson(db, deckId) else Transfer.exportAllJson(db)
-            return try {
-                file.writeText(json, Charsets.UTF_8)
-                true
-            } catch (_: Exception) { false }
         }
 
-        /** Importe un ou plusieurs fichiers .qrevise, renvoie le nombre de paquets ajoutés (ou -1 si annulé). */
-        fun importFile(): Int {
-            val chooser = FileChooser().apply {
-                title = "Importer des paquets QuizRévise"
-                extensionFilters.add(FileChooser.ExtensionFilter("Paquets QuizRévise (*.qrevise)", "*.qrevise"))
+        /** Importe des fichiers .qrevise (asynchrone) — résultat au JS via importDone(n). */
+        fun importFile() {
+            Platform.runLater {
+                val chooser = FileChooser().apply {
+                    title = "Importer des paquets QuizRévise"
+                    extensionFilters.add(FileChooser.ExtensionFilter("Paquets QuizRévise (*.qrevise)", "*.qrevise"))
+                }
+                val files = chooser.showOpenMultipleDialog(stageRef)
+                if (files == null) { callJsSafe("importDone(-1)"); return@runLater }
+                var total = 0
+                for (f in files) {
+                    try { total += Transfer.importJson(db, f.readText(Charsets.UTF_8)) } catch (_: Exception) { }
+                }
+                callJsSafe("importDone($total)")
             }
-            val files = chooser.showOpenMultipleDialog(stageRef) ?: return -1
-            var total = 0
-            for (f in files) {
-                try { total += Transfer.importJson(db, f.readText(Charsets.UTF_8)) } catch (_: Exception) { }
-            }
-            return total
         }
 
         fun stats(): String {

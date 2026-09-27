@@ -258,9 +258,10 @@
 <script>
 'use strict';
 // ============================================================
-// Pont natif : la page ne rend RIEN tant que Kotlin n'a pas
+// Pont natif : la page n'affiche rien tant que Kotlin n'a pas
 // injecté window.QuizReviseNative puis appelé nativeReady().
-// (Les données de démo ne servent qu'à l'aperçu navigateur.)
+// Si le pont ne monte pas sous 15 s → message d'erreur clair
+// (au lieu d'un « Chargement… » infini).
 // ============================================================
 let N = null;
 
@@ -271,47 +272,17 @@ function nativeReady() {
 }
 window.nativeReady = nativeReady;
 
-// Aperçu hors application (navigateur) uniquement : jamais dans l'app réelle.
-const IN_APP = /JavaFX|javafx/i.test(navigator.userAgent);
-if (!IN_APP) {
-  setTimeout(function () {
-    if (!N) { N = demoApi(); render(); }
-  }, 600);
-}
+setTimeout(function () {
+  if (!N) {
+    const m = document.getElementById('main');
+    if (m) m.innerHTML = '<div class="empty"><div class="big">⚠️</div>' +
+      'Problème technique : le moteur interne n\'a pas démarré.<br>' +
+      'Fermez et relancez l\'application. Si le problème persiste, réinstallez-la.</div>';
+  }
+}, 15000);
 
-function demoApi() {
-  const decks = [
-    { id: 1, name: 'Anglais – Vocabulaire', color: -10166236, cardCount: 2 },
-    { id: 2, name: 'Histoire – Dates clés', color: -14145461, cardCount: 1 }
-  ];
-  const cards = { 1: [
-    { id: 1, question: 'cat', answer: 'chat' },
-    { id: 2, question: 'dog', answer: 'chien' }
-  ], 2: [ { id: 3, question: '1789', answer: 'Révolution française' } ] };
-  let nextId = 100;
-  return {
-    decks: function () { return JSON.stringify(decks); },
-    cards: function (id) { return JSON.stringify(cards[id] || []); },
-    createDeck: function (n) { decks.unshift({ id: ++nextId, name: n, color: -10166236, cardCount: 0 }); cards[nextId] = []; },
-    renameDeck: function (id, n) { decks.find(d => d.id == id).name = n; },
-    deleteDeck: function (id) { const i = decks.findIndex(d => d.id == id); if (i >= 0) decks.splice(i, 1); },
-    addCard: function (deckId, q, a) { (cards[deckId] = cards[deckId] || []).push({ id: ++nextId, question: q, answer: a }); },
-    updateCard: function (id, q, a) {
-      for (const k in cards) { const c = cards[k].find(x => x.id == id); if (c) { c.question = q; c.answer = a; } }
-    },
-    deleteCard: function (id) {
-      for (const k in cards) { const i = cards[k].findIndex(x => x.id == id); if (i >= 0) cards[k].splice(i, 1); }
-    },
-    recordSession: function () {},
-    stats: function () { return JSON.stringify({ todayReviews: 14, accuracy: 79, streak: 3, best: 7 }); },
-    version: function () { return 'aperçu navigateur'; },
-    checkUpdatesAsync: function (manual) { setTimeout(function () { updateCheckResult('up_to_date', manual); }, 300); },
-    downloadAndInstall: function () {},
-    openReleases: function () {},
-    exportFile: function () { return false; },
-    importFile: function () { return -1; }
-  };
-}
+// Le « pont de démonstration » du navigateur a été retiré : il masquait les
+// dysfonctionnements réels. L'UI ne se teste plus que dans l'application.
 
 const esc = s => (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -607,15 +578,23 @@ function updateDone(success) {
   }
 }
 
-// ============ EXPORT / IMPORT .qrevise ============
+// ============ EXPORT / IMPORT .qrevise (asynchrones) ============
 function doExport(deckId, name) {
-  const ok = N.exportFile(deckId, name);
+  N.exportFile(deckId, name);
+  // La suite arrive via exportDone(ok)
+}
+
+function exportDone(ok) {
   if (ok) alert('Paquet exporté ✅\n\nLe fichier .qrevise peut être importé sur n\'importe quel appareil (Android, iPhone, PC…).');
 }
 
 function doImport() {
-  const added = N.importFile();
-  if (added < 0) return;
+  N.importFile();
+  // La suite arrive via importDone(n)
+}
+
+function importDone(added) {
+  if (added < 0) return; // annulé par l'utilisateur
   if (added === 0) alert('Aucun paquet importé : le fichier est vide ou invalide.');
   else alert(added > 1 ? added + ' paquets importés avec succès ✅' : 'Paquet importé avec succès ✅');
   if (added > 0) render();

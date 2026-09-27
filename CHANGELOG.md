@@ -4,6 +4,13 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.4.3] - 2026-09-27
+
+### Corrections (desktop)
+- 🚀 **Écran « Chargement… » infini résolu** : le pont entre l'interface et le moteur ne se monte plus en silence — diagnostique en console et message d'erreur clair à l'écran si un problème survient
+- 📥 **L'import de fichiers `.qrevise` fonctionne à nouveau** : la fenêtre de sélection de fichier s'ouvre bien (elle était court-circuitée par le WebView), puis le nombre de paquets importés est annoncé
+- 📤 L'export utilise le même mécanisme fiable
+
 ## [1.4.2] - 2026-09-27
 
 ### Corrections
