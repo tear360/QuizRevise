@@ -4,6 +4,14 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.4.2] - 2026-09-27
+
+### Corrections
+- 🖥️ **Interface desktop réparée** : plus aucune donnée de démonstration ne peut apparaître dans l'application (l'interface n'affiche rien tant que le moteur n'est pas prêt), boîtes de dialogue « Nouveau paquet / Ajouter une carte » à nouveau fonctionnelles, et tous les boutons répondent — y compris les choix du QCM contenant une apostrophe
+- ↩️ Bouton **Retour présent sur tous les écrans** (statistiques, révision, paquet)
+- ⚡ La vérification de mise à jour ne **gèle plus l'interface** : elle s'effectue en arrière-plan
+- 🪟 Flux d'installation des mises à jour rendu plus robuste, avec messages d'erreur précis et repli vers la page GitHub si besoin
+
 ## [1.4.1] - 2026-09-27
 
 ### Améliorations
