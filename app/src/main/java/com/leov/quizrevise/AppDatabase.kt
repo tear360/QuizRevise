@@ -81,6 +81,11 @@ class AppDatabase(context: Context) :
             if (c.moveToFirst()) c.getString(0) else ""
         }
 
+    fun deckColor(id: Long): Int =
+        readableDatabase.rawQuery("SELECT color FROM decks WHERE id = ?", arrayOf(id.toString())).use { c ->
+            if (c.moveToFirst()) c.getInt(0) else 0xFF6750A4.toInt()
+        }
+
     // ---------- Cartes ----------
 
     fun cards(deckId: Long): List<Card> {

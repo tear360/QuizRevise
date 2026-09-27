@@ -92,6 +92,12 @@ class DesktopDb(private val dbPath: String = computeDbPath()) {
             it.executeQuery().useRows { r -> r.getString(1) }.firstOrNull() ?: ""
         }
 
+    fun deckColor(id: Long): Int =
+        conn.prepareStatement("SELECT color FROM decks WHERE id = ?").use {
+            it.setLong(1, id)
+            it.executeQuery().useRows { r -> r.getInt(1) }.firstOrNull() ?: 0xFF6750A4.toInt()
+        }
+
     fun cards(deckId: Long): List<Card> =
         conn.prepareStatement("SELECT id, deck_id, question, answer FROM cards WHERE deck_id = ? ORDER BY id").use {
             it.setLong(1, deckId)

@@ -8,7 +8,21 @@ version = (project.findProperty("appVersionName") as String?) ?: "1.1.0"
 dependencies {
     implementation("org.xerial:sqlite-jdbc:3.50.3.0")
     implementation("org.json:json:20240303")
-    implementation("com.formdev:flatlaf:3.7.2")
+
+    // Interface en HTML/CSS rendue par JavaFX WebView (WebKit embarqué)
+    // Natives de la plateforme de build (le jar est packagé par OS côté CI)
+    val fx = "21.0.4"
+    val osName = System.getProperty("os.name").lowercase()
+    val fxClassifier = when {
+        osName.contains("win") -> "win"
+        osName.contains("mac") || osName.contains("darwin") -> "mac"
+        else -> "linux"
+    }
+    implementation("org.openjfx:javafx-base:$fx:$fxClassifier")
+    implementation("org.openjfx:javafx-graphics:$fx:$fxClassifier")
+    implementation("org.openjfx:javafx-controls:$fx:$fxClassifier")
+    implementation("org.openjfx:javafx-media:$fx:$fxClassifier")
+    implementation("org.openjfx:javafx-web:$fx:$fxClassifier")
 }
 
 kotlin {

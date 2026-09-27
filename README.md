@@ -58,6 +58,31 @@ tools/      Générateur d'icônes
 .github/workflows/release.yml   4 builds en parallèle + release unique
 ```
 
+## 🔄 Import / Export de paquets (format `.qrevise`)
+
+Partage tes paquets entre tous tes appareils : **exporté sur Windows → importé sur Android, iPhone ou un autre PC**, sans perte (nom, couleur, cartes).
+
+- **Android** : appui long sur un paquet → « Exporter », ou menu ⋮ → « Importer / Exporter tous »
+- **Windows/Linux** : bouton « Exporter » sur chaque paquet, ou icônes import/export dans le header
+- **iOS** : menu ⋮ → « Importer / Exporter » (partage via Fichiers, AirDrop, mail…)
+
+Le format est un JSON lisible et versionné :
+```json
+{
+  "format": "quizrevise",
+  "version": 1,
+  "exported": "2026-09-27T18:30:00+02:00",
+  "decks": [
+    {
+      "name": "Anglais – Vocabulaire",
+      "color": "#6750A4",
+      "cards": [ { "q": "cat", "a": "chat" } ]
+    }
+  ]
+}
+```
+Les futures versions de l'app resteront compatibles (champs additionnels ignorés proprement, `version` permettant les migrations).
+
 ## 🔄 Mises à jour automatiques
 
 - **Android** : l'app interroge `api.github.com/repos/tear360/QuizRevise/releases/latest`, compare les versions, télécharge l'APK (DownloadManager) et lance l'installation. Le keystore `app/quizrevise.keystore` (versionné) garantit la même signature entre les versions — indispensable pour que la mise à jour s'installe par-dessus l'existant. ⚠️ Pour un projet sérieux, déplace-le en *GitHub Secrets*.

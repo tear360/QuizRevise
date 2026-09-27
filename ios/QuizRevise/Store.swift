@@ -123,4 +123,67 @@ final class Store: ObservableObject {
     }
 
     func bestStreak() -> Int { stats.values.map(\.best).max() ?? 0 }
+
+    // MARK: - Transfert .qrevise (compatible Windows/Linux/Android)
+
+    private static func hex(_ colorHex: String) -> String { "#" + colorHex }
+
+    private static func color(fromHex hex: String?) -> String {
+        let h = (hex ?? "").trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "#", with: "")
+        return Self.palette.contains(h) ? h : (h.count == 6 ? h : "6750A4")
+    }
+
+    private static func stamp() -> String {
+        let f = ISO8601DateFormatter()
+        return f.string(from: Date())
+    }
+
+    /// Exporte tous les paquets (ou un seul) au format .qrevise. Renvoie le JSON, ou nil.
+    func exportJson(deckID: UUID? = nil) -> String? {
+        let selected = deckID.map { id in decks.filter { $0.id == id } } ?? decks
+        guard !selected.isEmpty else { return nil }
+        var arr: [[String: Any]] = []
+        for d in selected {
+            arr.append([
+                "name": d.name,
+                "color": hex(d.colorHex),
+                "cards": d.cards.map { ["q": $0.question, "a": $0.answer] }
+            ])
+        }
+        let root: [String: Any] = [
+            "format": "quizrevise",
+            "version": 1,
+            "exported": Self.stamp(),
+            "decks": arr
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys]) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    /// Importe des paquets depuis un JSON .qrevise. Renvoie le nombre de paquets ajoutés.
+    @discardableResult
+    func importJson(_ text: String) -> Int {
+        guard let data = text.data(using: .utf8),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              root["format"] as? String == "quizrevise",
+              let arr = root["decks"] as? [[String: Any]] else { return 0 }
+        var added = 0
+        for d in arr {
+            guard let name = d["name"] as? String, !name.trimmingCharacters(in: .whitespaces).isEmpty else { continue }
+            let color = Self.color(fromHex: d["color"] as? String)
+            let deck = Deck(name: name, colorHex: color)
+            if let cards = d["cards"] as? [[String: Any]] {
+                for c in cards {
+                    if let q = c["q"] as? String, let a = c["a"] as? String,
+                       !q.trimmingCharacters(in: .whitespaces).isEmpty,
+                       !a.trimmingCharacters(in: .whitespaces).isEmpty {
+                        deck.cards.append(Card(question: q, answer: a))
+                    }
+                }
+            }
+            decks.insert(deck, at: 0)
+            added += 1
+        }
+        return added
+    }
 }

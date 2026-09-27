@@ -2,6 +2,8 @@ package com.leov.quizrevise.desktop
 
 import java.io.File
 
+private fun tmp2(): String = java.io.File.createTempFile("quizrevise-t2", ".db").let { it.delete(); it.absolutePath }
+
 /** Tests de la logique métier (DB SQLite, comparaison de versions) exécutables sans interface. */
 object SelfTest {
 
@@ -38,6 +40,30 @@ object SelfTest {
             e.printStackTrace()
         } finally {
             tmp.delete()
+        }
+
+        // --- Transfert .qrevise : export puis import dans une autre base (round-trip) ---
+        try {
+            val db2 = DesktopDb(tmp2())
+            val d2 = db2.createDeck(" Voyage ".trim(), 0xFF0B57D0.toInt())
+            db2.addCard(d2, "hello", "bonjour")
+            db2.addCard(d2, "world", "monde")
+            val json = Transfer.exportDeckJson(db2, d2)
+            check("qrevise: format/version", json.contains("\"format\": \"quizrevise\"") && json.contains("\"version\": 1"))
+            check("qrevise: couleur hex", json.contains("#0B57D0"))
+
+            val db3 = DesktopDb(tmp2())
+            val imported = Transfer.importJson(db3, json)
+            check("qrevise: import 1 paquet", imported == 1)
+            val decks3 = db3.decks()
+            check("qrevise: nom conservé", decks3.first().name == "Voyage")
+            check("qrevise: couleur conservée", decks3.first().color == 0xFF0B57D0.toInt())
+            val cards3 = db3.cards(decks3.first().id)
+            check("qrevise: cartes conservées", cards3.map { it.question to it.answer } == listOf("hello" to "bonjour", "world" to "monde"))
+            check("qrevise: json invalide rejeté", Transfer.importJson(db3, "{}") == 0)
+        } catch (e: Exception) {
+            failures.add("exception qrevise: ${e.message}")
+            e.printStackTrace()
         }
 
         // --- Comparaison de versions ---

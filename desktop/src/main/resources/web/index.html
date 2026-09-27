@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --primary: #6750A4;
+    --primary-dark: #381E72;
+    --primary-container: #EADDFF;
+    --bg: #FAF8FF;
+    --surface: #FFFFFF;
+    --on-surface: #1D1B20;
+    --on-variant: #49454F;
+    --outline: #79747E;
+    --correct: #1B873B;
+    --wrong: #B3261E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--on-surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    background: var(--primary);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,.18);
+  }
+  header h1 { font-size: 20px; font-weight: 700; flex: 1; }
+  header .icon-btn {
+    background: rgba(255,255,255,.14);
+    border: none;
+    color: #fff;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    font-size: 19px;
+    cursor: pointer;
+    display: grid; place-items: center;
+    transition: background .15s;
+  }
+  header .icon-btn:hover { background: rgba(255,255,255,.28); }
+  header .icon-btn svg { width: 21px; height: 21px; fill: #fff; }
+
+  main { flex: 1; overflow-y: auto; padding: 20px 24px 110px; }
+  .empty {
+    margin-top: 18vh;
+    text-align: center;
+    color: var(--on-variant);
+    font-size: 16px;
+    line-height: 1.7;
+  }
+  .empty .big { font-size: 52px; margin-bottom: 12px; }
+
+  /* ---------- Cartes (paquets / flashcards) ---------- */
+  .card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.09);
+    cursor: pointer;
+    transition: transform .12s, box-shadow .12s;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.13); }
+  .dot { width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; }
+  .card .info { flex: 1; min-width: 0; }
+  .card .name { font-size: 16px; font-weight: 700; }
+  .card .sub { font-size: 13px; color: var(--on-variant); margin-top: 2px; }
+  .card .actions { display: flex; gap: 8px; }
+
+  /* ---------- Boutons ---------- */
+  .pill {
+    border: none;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: filter .15s, transform .06s;
+    background: var(--primary);
+    color: #fff;
+  }
+  .pill:hover { filter: brightness(1.1); }
+  .pill:active { transform: scale(.97); }
+  .pill.tonal { background: var(--primary-container); color: var(--primary-dark); }
+  .pill.danger { background: #FBE9E7; color: var(--wrong); }
+  .pill.correct { background: var(--correct); color: #fff; }
+  .pill.wrong { background: var(--wrong); color: #fff; }
+  .pill.big { font-size: 16px; padding: 14px 30px; }
+
+  .fab {
+    position: fixed;
+    right: 26px; bottom: 26px;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    font-size: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(103,80,164,.5);
+    transition: transform .15s, filter .15s;
+    display: grid; place-items: center;
+  }
+  .fab:hover { filter: brightness(1.12); transform: scale(1.06); }
+
+  /* ---------- Flipcard 3D ---------- */
+  .stage { perspective: 1400px; max-width: 640px; margin: 0 auto; }
+  .flip {
+    position: relative;
+    height: 340px;
+    transform-style: preserve-3d;
+    transition: transform .55s cubic-bezier(.3,1.4,.4,1);
+    cursor: pointer;
+  }
+  .flip.flipped { transform: rotateY(180deg); }
+  .face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 24px;
+    background: var(--surface);
+    box-shadow: 0 6px 24px rgba(0,0,0,.12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    text-align: center;
+  }
+  .face.back { transform: rotateY(180deg); }
+  .face .side {
+    font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+    color: var(--primary); text-transform: uppercase;
+  }
+  .face .txt { font-size: 27px; font-weight: 700; margin-top: 22px; line-height: 1.35; }
+  .face .hint { font-size: 13px; color: var(--outline); margin-top: 26px; }
+
+  .quiz-q {
+    max-width: 640px; margin: 0 auto 26px;
+    font-size: 25px; font-weight: 700; text-align: center; line-height: 1.35;
+  }
+  .quiz-opts {
+    max-width: 640px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .quiz-opts .pill { padding: 16px 18px; font-size: 15px; background: var(--primary); }
+  .mode-choice { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 16vh; }
+  .mode-choice h2 { font-size: 22px; margin-bottom: 8px; }
+  .mode-choice .pill { min-width: 240px; }
+
+  .progress-row { max-width: 640px; margin: 0 auto 20px; text-align: center; color: var(--on-variant); font-size: 13px; }
+  .progress-bar { height: 7px; border-radius: 4px; background: var(--primary-container); overflow: hidden; margin-top: 8px; }
+  .progress-bar > div { height: 100%; background: var(--primary); border-radius: 4px; transition: width .3s; }
+
+  .flash-actions { display: flex; justify-content: center; gap: 14px; margin-top: 26px; }
+  .flash-actions .pill { min-width: 150px; font-size: 15px; padding: 13px 24px; }
+
+  dialog {
+    border: none;
+    border-radius: 20px;
+    padding: 26px;
+    width: min(430px, 90vw);
+    box-shadow: 0 12px 40px rgba(0,0,0,.25);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.35); }
+  dialog h2 { font-size: 18px; margin-bottom: 16px; }
+  dialog label { display: block; font-size: 13px; font-weight: 600; color: var(--on-variant); margin: 12px 0 4px; }
+  dialog input, dialog select {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1.5px solid var(--outline);
+    border-radius: 11px;
+    font-size: 15px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--on-surface);
+  }
+  dialog input:focus { outline: none; border-color: var(--primary); }
+  dialog .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+
+  .stats-grid { max-width: 430px; margin: 8vh auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat {
+    background: var(--surface); border-radius: 16px; padding: 22px;
+    text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.09);
+  }
+  .stat .v { font-size: 27px; font-weight: 800; color: var(--primary); }
+  .stat .l { font-size: 13px; color: var(--on-variant); margin-top: 5px; }
+  .center-title { text-align: center; font-size: 20px; margin-top: 40px; }
+</style>
+</head>
+<body>
+  <header id="hdr">
+    <button class="icon-btn" id="btnBack" style="display:none">←</button>
+    <h1 id="title">Mes paquets</h1>
+    <button class="icon-btn" id="btnImport" title="Importer un fichier .qrevise" style="display:none">
+      <svg viewBox="0 0 24 24"><path d="M19 15v4H5v-4H3v6h18v-6h-2zM6 9l5 5V2h2v12l5-5 1.41 1.41L12 17.83 4.59 10.41 6 9z"/></svg>
+    </button>
+    <button class="icon-btn" id="btnExportAll" title="Exporter tous les paquets" style="display:none">
+      <svg viewBox="0 0 24 24"><path d="M5 9v4H3v6h18v-6h-2V9c0-1.1-.9-2-2-2h-4.5V4.5a2.25 2.25 0 0 0-4.5 0V7H7c-1.1 0-2 .9-2 2zm-3 6h4v2H2v-2zm16 0h4v2h-4v-2zm-9 0h4v2H9v-2z"/></svg>
+    </button>
+    <button class="icon-btn" id="btnStats" title="Statistiques">
+      <svg viewBox="0 0 24 24"><path d="M5 21V9h4v12H5zm5 0V3h4v18h-4zm5 0v-8h4v8h-4z"/></svg>
+    </button>
+    <button class="icon-btn" id="btnRefresh" title="Rechercher les mises à jour">
+      <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+    </button>
+    <button class="icon-btn" id="btnAbout" title="À propos">
+      <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+    </button>
+  </header>
+
+  <main id="main"></main>
+  <button class="fab" id="fab" style="display:none">＋</button>
+
+  <dialog id="dlg">
+    <h2 id="dlgTitle"></h2>
+    <div id="dlgBody"></div>
+    <div class="row">
+      <button class="pill tonal" id="dlgCancel">Annuler</button>
+      <button class="pill" id="dlgOk">Enregistrer</button>
+    </div>
+  </dialog>
+
+<script>
+// L'API native expose des chaînes JSON ; hors de l'app (aperçu navigateur), on simule des données.
+const N = window.QuizReviseNative ?? {
+  decks: () => JSON.stringify([
+    { id: 1, name: 'Anglais – Vocabulaire', color: -10166236, cardCount: 12 },
+    { id: 2, name: 'Histoire – Dates clés', color: -14145461, cardCount: 8 },
+    { id: 3, name: 'SVT – Chapitre 3', color: -12933218, cardCount: 5 }
+  ]),
+  cards: (id) => JSON.stringify([
+    { id: 1, question: 'Traduire « cat »', answer: 'chat' },
+    { id: 2, question: 'Traduire « dog »', answer: 'chien' },
+    { id: 3, question: 'Traduire « house »', answer: 'maison' },
+    { id: 4, question: 'Traduire « sun »', answer: 'soleil' }
+  ]),
+  stats: () => JSON.stringify({ todayReviews: 14, accuracy: 79, streak: 3, best: 7 }),
+  version: () => '1.4.0 (aperçu)',
+  checkUpdates: () => 'up_to_date',
+  recordSession: () => {},
+  openReleases: () => {}
+};
+const esc = s => (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const PALETTE = ['6750A4','1B873B','B3261E','0B57D0','E8590C','7A1FA2'];
+
+let screen = 'decks';
+let currentDeck = null;
+let session = null;
+
+// ============ ROUTAGE ============
+function go(s) { screen = s; render(); }
+
+function render() {
+  hideFab();
+  const hdr = document.getElementById('hdr');
+  const fab = document.getElementById('fab');
+  const title = document.getElementById('title');
+  document.getElementById('btnBack').style.display = (screen !== 'decks' && screen !== 'stats') ? '' : 'none';
+  document.getElementById('btnImport').style.display = (screen === 'decks' || screen === 'deck') ? '' : 'none';
+  document.getElementById('btnExportAll').style.display = screen === 'decks' ? '' : 'none';
+  const showHdrBtns = ['decks','deck'].includes(screen);
+  for (const id of ['btnStats','btnRefresh','btnAbout']) {
+    document.getElementById(id).style.display = showHdrBtns ? '' : 'none';
+  }
+  fab.style.display = (screen === 'decks' || screen === 'deck') ? '' : 'none';
+
+  if (screen === 'decks') { title.textContent = 'Mes paquets'; renderDecks(); }
+  else if (screen === 'deck') { title.textContent = currentDeck.name; renderDeck(); }
+  else if (screen === 'study') { title.textContent = 'Révision'; renderStudy(); }
+  else if (screen === 'stats') { title.textContent = 'Statistiques'; renderStats(); }
+}
+
+// ============ PAQUETS ============
+function renderDecks() {
+  const decks = JSON.parse(N.decks());
+  const m = document.getElementById('main');
+  if (!decks.length) {
+    m.innerHTML = `<div class="empty"><div class="big">🎴</div>Aucun paquet pour l'instant.<br>Crée ton premier paquet pour commencer à réviser.</div>`;
+    document.getElementById('fab').onclick = () => deckDialog(null);
+    return;
+  }
+  m.innerHTML = decks.map(d => `
+    <div class="card" data-id="${d.id}">
+      <div class="dot" style="background:#${(d.color>>>0).toString(16).padStart(8,'0').slice(-6)}"></div>
+      <div class="info">
+        <div class="name">${esc(d.name)}</div>
+        <div class="sub">${d.cardCount} carte${d.cardCount > 1 ? 's' : ''}</div>
+      </div>
+      <div class="actions">
+        <button class="pill tonal" data-act="export" title="Exporter ce paquet en .qrevise">Exporter</button>
+        <button class="pill tonal" data-act="edit">Renommer</button>
+        <button class="pill danger" data-act="del">Supprimer</button>
+      </div>
+    </div>`).join('');
+  m.querySelectorAll('.card').forEach(el => {
+    const d = decks.find(x => x.id == el.dataset.id);
+    el.addEventListener('click', e => {
+      const act = e.target.closest('[data-act]')?.dataset.act;
+      if (act === 'edit') { e.stopPropagation(); deckDialog(d); }
+      else if (act === 'del') { e.stopPropagation(); confirmDeleteDeck(d); }
+      else if (act === 'export') { e.stopPropagation(); doExport(d.id, d.name); }
+      else { currentDeck = d; go('deck'); }
+    });
+  });
+  document.getElementById('fab').onclick = () => deckDialog(null);
+}
+
+function deckDialog(deck) {
+  openDialog(
+    deck ? 'Renommer le paquet' : 'Nouveau paquet',
+    `<label>Nom du paquet</label><input id="f_name" placeholder="ex. : Anglais – Vocabulaire" value="${esc(deck?.name || '')}">`,
+    () => {
+      const name = document.getElementById('f_name').value.trim();
+      if (!name) return false;
+      if (deck) N.renameDeck(deck.id, name); else N.createDeck(name);
+      render();
+      return true;
+    }
+  );
+}
+
+function confirmDeleteDeck(d) {
+  if (confirm(`Supprimer « ${d.name} » et toutes ses cartes ?`)) { N.deleteDeck(d.id); render(); }
+}
+
+// ============ EXPORT / IMPORT .qrevise ============
+function doExport(deckId, name) {
+  const ok = deckId > 0 ? N.exportFile(deckId, name) : N.exportFile(0, 'mes-paquets');
+  if (ok) alert('Paquet exporté ✅\n\nLe fichier .qrevise peut être importé sur n\'importe quel appareil (Android, iPhone, PC…).');
+}
+
+function doImport() {
+  const added = N.importFile();
+  if (added < 0) return; // annulé
+  if (added === 0) alert('Aucun paquet importé : le fichier est vide ou invalide.');
+  else alert(added > 1 ? `${added} paquets importés avec succès ✅` : 'Paquet importé avec succès ✅');
+  if (added > 0) render();
+}
+
+document.getElementById('btnImport').onclick = doImport;
+document.getElementById('btnExportAll').onclick = () => doExport(0, 'mes-paquets');
+
+// ============ CARTES D'UN PAQUET ============
+function renderDeck() {
+  const cards = JSON.parse(N.cards(currentDeck.id));
+  const m = document.getElementById('main');
+  if (!cards.length) {
+    m.innerHTML = `<div class="empty"><div class="big">🃏</div>Ce paquet est vide.<br>Ajoute ta première carte !</div>`;
+  } else {
+    m.innerHTML = cards.map(c => `
+      <div class="card" data-id="${c.id}" style="cursor:default">
+        <div class="info">
+          <div class="name">${esc(c.question)}</div>
+          <div class="sub">${esc(c.answer)}</div>
+        </div>
+        <div class="actions">
+          <button class="pill tonal" data-act="edit">Modifier</button>
+          <button class="pill danger" data-act="del">Supprimer</button>
+        </div>
+      </div>`).join('');
+    m.querySelectorAll('.card').forEach(el => {
+      const c = cards.find(x => x.id == el.dataset.id);
+      el.querySelector('[data-act="edit"]').onclick = () => cardDialog(c);
+      el.querySelector('[data-act="del"]').onclick = () => {
+        if (confirm('Supprimer cette carte ?')) { N.deleteCard(c.id); render(); }
+      };
+    });
+  }
+  const fab = document.getElementById('fab');
+  fab.textContent = '＋';
+  fab.onclick = () => cardDialog(null);
+  // FAB devient "Réviser" à gauche du + : on utilise le bouton tonal dans le header ? Non :
+  // on ajoute un bouton flottant Réviser via innerHTML
+  if (!document.getElementById('fabStudy')) {
+    const b = document.createElement('button');
+    b.id = 'fabStudy';
+    b.className = 'fab';
+    b.style.right = '100px';
+    b.style.bottom = '26px';
+    b.style.width = 'auto';
+    b.style.borderRadius = '999px';
+    b.style.padding = '0 24px';
+    b.style.fontSize = '16px';
+    b.textContent = '▶ Réviser';
+    document.body.appendChild(b);
+  }
+  const fs = document.getElementById('fabStudy');
+  fs.style.display = '';
+  fs.onclick = () => {
+    if (N.cards(currentDeck.id).length < 2) { alert('Il faut au moins 2 cartes pour lancer une session.'); return; }
+    startStudy();
+  };
+}
+
+function cardDialog(card) {
+  openDialog(
+    card ? 'Modifier la carte' : 'Ajouter une carte',
+    `<label>Question / Recto</label><input id="f_q" value="${esc(card?.question || '')}">
+     <label>Réponse / Verso</label><input id="f_a" value="${esc(card?.answer || '')}">`,
+    () => {
+      const q = document.getElementById('f_q').value.trim();
+      const a = document.getElementById('f_a').value.trim();
+      if (!q || !a) return false;
+      if (card) N.updateCard(card.id, q, a); else N.addCard(currentDeck.id, q, a);
+      render();
+      return true;
+    }
+  );
+}
+
+// ============ RÉVISION ============
+function startStudy() {
+  const cards = JSON.parse(N.cards(currentDeck.id));
+  session = { cards, order: cards.map((_, i) => i).sort(() => Math.random() - .5), pos: 0, correct: 0, mode: null, answered: false };
+  go('study');
+}
+
+function renderStudy() {
+  hideFab();
+  const m = document.getElementById('main');
+  if (!session.mode) {
+    m.innerHTML = `
+      <div class="mode-choice">
+        <h2>Comment veux-tu réviser ?</h2>
+        <button class="pill big" onclick="beginMode('flash')">🃏 Flashcards</button>
+        <button class="pill big" onclick="beginMode('quiz')">❓ QCM</button>
+      </div>`;
+    return;
+  }
+  if (session.pos >= session.order.length) {
+    const pct = Math.round(session.correct * 100 / session.order.length);
+    m.innerHTML = `
+      <div class="mode-choice">
+        <h2>Session terminée !</h2>
+        <div style="font-size:30px;font-weight:800;color:var(--primary)">Score : ${session.correct} / ${session.order.length} (${pct}%)</div>
+        <button class="pill big" onclick="beginMode(session.mode)">Recommencer</button>
+        <button class="pill big tonal" onclick="endStudy()">Retour au paquet</button>
+      </div>`;
+    N.recordSession(session.order.length, session.correct);
+    return;
+  }
+  const card = session.cards[session.order[session.pos]];
+  const prog = Math.round(session.pos * 100 / session.order.length);
+  if (session.mode === 'flash') {
+    m.innerHTML = `
+      <div class="progress-row">Carte ${session.pos + 1} / ${session.order.length}
+        <div class="progress-bar"><div style="width:${prog}%"></div></div>
+      </div>
+      <div class="stage">
+        <div class="flip" id="flip" onclick="doFlip()">
+          <div class="face front">
+            <div class="side">Question</div>
+            <div class="txt">${esc(card.question)}</div>
+            <div class="hint">Clique sur la carte pour la retourner</div>
+          </div>
+          <div class="face back">
+            <div class="side">Réponse</div>
+            <div class="txt">${esc(card.answer)}</div>
+            <div class="hint">Clique encore pour revoir la question</div>
+          </div>
+        </div>
+      </div>
+      <div class="flash-actions" id="flashActions" style="visibility:hidden">
+        <button class="pill wrong" onclick="answerFlash(false)">Pas su</button>
+        <button class="pill correct" onclick="answerFlash(true)">Je savais</button>
+      </div>`;
+  } else {
+    const distractors = session.cards.map(c => c.answer).filter(a => a !== card.answer).filter((v,i,arr)=>arr.indexOf(v)===i).sort(() => Math.random()-.5).slice(0,3);
+    const opts = [...distractors, card.answer].sort(() => Math.random() - .5);
+    m.innerHTML = `
+      <div class="progress-row">Question ${session.pos + 1} / ${session.order.length}
+        <div class="progress-bar"><div style="width:${prog}%"></div></div>
+      </div>
+      <div class="quiz-q">${esc(card.question)}</div>
+      <div class="quiz-opts">
+        ${opts.map(o => `<button class="pill" data-opt="${esc(o)}" onclick="answerQuiz(this,'${esc(o).replace(/'/g, "\\'")}')">${esc(o)}</button>`).join('')}
+      </div>`;
+  }
+}
+
+function beginMode(mode) { session.mode = mode; session.pos = 0; session.correct = 0; render(); }
+
+function doFlip() {
+  document.getElementById('flip').classList.toggle('flipped');
+  document.getElementById('flashActions').style.visibility = 'visible';
+}
+
+function answerFlash(ok) {
+  if (ok) session.correct++;
+  session.pos++;
+  render();
+}
+
+function answerQuiz(btn, opt) {
+  if (session.answered) return;
+  session.answered = true;
+  const card = session.cards[session.order[session.pos]];
+  const good = opt === card.answer;
+  if (good) session.correct++;
+  btn.classList.add(good ? 'correct' : 'wrong');
+  if (!good) {
+    document.querySelectorAll('.quiz-opts .pill').forEach(b => {
+      if (b.dataset.opt === card.answer) b.classList.add('correct');
+    });
+  }
+  setTimeout(() => { session.answered = false; session.pos++; render(); }, 850);
+}
+
+function endStudy() { go('deck'); }
+
+// ============ STATS / ABOUT / UPDATES ============
+function renderStats() {
+  hideFab();
+  const s = JSON.parse(N.stats());
+  document.getElementById('main').innerHTML = `
+    <div class="center-title">📊 Ta progression</div>
+    <div class="stats-grid">
+      <div class="stat"><div class="v">${s.todayReviews}</div><div class="l">cartes revues aujourd'hui</div></div>
+      <div class="stat"><div class="v">${s.accuracy}%</div><div class="l">précision du jour</div></div>
+      <div class="stat"><div class="v">${s.streak}</div><div class="l">jours de série 🔥</div></div>
+      <div class="stat"><div class="v">${s.best}</div><div class="l">meilleure série</div></div>
+    </div>`;
+}
+
+function showAbout() {
+  const v = N.version();
+  alert(`QuizRévise ${v}\n\nAlternative libre à Quizlet : flashcards, QCM et statistiques.\nFonctionne hors-ligne, données stockées en local.\n\nMises à jour : https://github.com/tear360/QuizRevise/releases/latest`);
+}
+
+function checkUpdates(manual) {
+  const r = N.checkUpdates();
+  if (r === 'error') { if (manual) alert('Impossible de vérifier les mises à jour (connexion ?)'); return; }
+  if (r === 'up_to_date') { if (manual) alert(`Tu as déjà la dernière version (${N.version()}).`); return; }
+  if (confirm(`La version ${r} est disponible (tu as la ${N.version()}).\n\nOuvrir la page de téléchargement ?`)) N.openReleases();
+}
+
+// ============ DIALOG GÉNÉRIQUE ============
+function openDialog(title, bodyHtml, onOk) {
+  document.getElementById('dlgTitle').textContent = title;
+  document.getElementById('dlgBody').innerHTML = bodyHtml;
+  const dlg = document.getElementById('dlg');
+  const ok = document.getElementById('dlgOk');
+  const cancel = document.getElementById('dlgCancel');
+  const close = () => { dlg.close(); ok.onclick = null; cancel.onclick = null; };
+  ok.onclick = () => { if (onOk()) close(); };
+  cancel.onclick = close;
+  dlg.showModal();
+  setTimeout(() => document.getElementById('dlg')?.querySelector('input')?.focus(), 60);
+}
+
+function hideFab() {
+  document.getElementById('fab').style.display = 'none';
+  document.getElementById('fabStudy')?.style.setProperty('display', 'none');
+}
+
+// ============ ÉVÉNEMENTS HEADER ============
+document.getElementById('btnBack').onclick = () => {
+  if (screen === 'study') { if (confirm('Quitter la session en cours ?')) go('deck'); }
+  else if (screen === 'deck') go('decks');
+  else if (screen === 'stats') go('decks');
+};
+document.getElementById('btnStats').onclick = () => go('stats');
+document.getElementById('btnRefresh').onclick = () => checkUpdates(true);
+document.getElementById('btnAbout').onclick = showAbout;
+
+render();
+</script>
+</body>
+</html>

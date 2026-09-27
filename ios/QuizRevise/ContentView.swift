@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var store = Store()
@@ -10,6 +11,9 @@ struct ContentView: View {
     @State private var renameText = ""
     @State private var updateMessage: String?
     @State private var releasePage: URL?
+    @State private var showImporter = false
+    @State private var shareItems: [Any] = []
+    @State private var showShare = false
 
     var body: some View {
         NavigationView {
@@ -41,6 +45,13 @@ struct ContentView: View {
                                     deckToRename = deck
                                     renameText = deck.name
                                 }
+                                Button("Exporter (.qrevise)") {
+                                    if let json = store.exportJson(deckID: deck.id),
+                                       let url = Self.writeTemp(json, name: "\\(deck.name).qrevise".replacingOccurrences(of: "/", with: "-")) {
+                                        shareItems = [url]
+                                        showShare = true
+                                    }
+                                }
                                 Button("Supprimer", role: .destructive) { store.deleteDeck(deck) }
                             }
                         }
@@ -54,6 +65,14 @@ struct ContentView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
+                        Button("Importer un paquet (.qrevise)") { showImporter = true }
+                        Button("Exporter tous mes paquets") {
+                            if let json = store.exportJson(),
+                               let url = Self.writeTemp(json, name: "mes-paquets.qrevise") {
+                                shareItems = [url]
+                                showShare = true
+                            }
+                        }
                         Button("Statistiques") { showStats = true }
                         Button("Rechercher les mises à jour") { checkUpdates() }
                         Button("À propos") {
@@ -103,6 +122,20 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $showStats) { StatsSheet(store: store) }
+            .sheet(isPresented: $showShare) {
+                ShareSheet(items: shareItems)
+            }
+            .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json, .data]) { result in
+                guard case .success(let url) = result else { return }
+                let secured = url.startAccessingSecurityScopedResource()
+                defer { if secured { url.stopAccessingSecurityScopedResource() } }
+                if let text = try? String(contentsOf: url, encoding: .utf8) {
+                    let added = store.importJson(text)
+                    updateMessage = added > 0
+                        ? (added > 1 ? "\(added) paquets importés ✅" : "Paquet importé ✅")
+                        : "Aucun paquet importé (fichier invalide ?)"
+                }
+            }
             .alert("Mises à jour",
                    isPresented: Binding(get: { updateMessage != nil && releasePage == nil },
                                         set: { if !$0 { updateMessage = nil } })) {
@@ -141,6 +174,21 @@ extension Store {
     func index(of deck: Deck) -> Int {
         decks.firstIndex(where: { $0.id == deck.id }) ?? 0
     }
+}
+
+extension ContentView {
+    static func writeTemp(_ text: String, name: String) -> URL? {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        do { try text.write(to: url, atomically: true, encoding: .utf8); return url } catch { return nil }
+    }
+}
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) { }
 }
 
 extension Color {
