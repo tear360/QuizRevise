@@ -7,31 +7,31 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) 
 ## [1.4.0] - 2026-09-27
 
 ### Ajouts
-- 🖥️ **Interface desktop entièrement refonte en HTML/CSS** (rendue par un WebView) : même design Material 3 que l'app Android, flipcard en **vraie 3D CSS**, boutons pill, FAB, dialogues modernes — fini les polices en carrés
-- 📦 **Format d'échange `.qrevise`** : exporte/importe tes paquets entre **tous tes appareils** (Windows ↔ Android ↔ iPhone ↔ Linux) sans perte — nom, couleur et cartes conservés, JSON versionné et lisible
+- 🖥️ **Interface desktop entièrement repensée en HTML/CSS** (rendue par un WebView intégré) : même design Material 3 que l'application Android, flashcard en **vraie 3D CSS**, boutons pill, FAB, dialogues modernes
+- 📦 **Format d'échange `.qrevise`** : exportez/importez vos paquets entre **tous vos appareils** (Windows ↔ Android ↔ iPhone ↔ Linux) sans perte — nom, couleur et cartes conservés, JSON versionné et lisible
 - 📱 Android : export par appui long sur un paquet + import/export global dans le menu ⋮
-- 🍎 iOS : import via le sélecteur Fichiers, export via la feuille de partage (AirDrop, mail…)
+- 🍎 iOS : import via le sélecteur Fichiers, export via la feuille de partage (AirDrop, e-mail…)
 
 ### Technique
-- Desktop : migration Swing → WebView JavaFX (WebKit embarqué), pont JS ↔ Kotlin synchrone, tests round-trip `.qrevise` dans le selftest
+- Desktop : migration Swing → WebView JavaFX (WebKit embarqué), pont JS ↔ Kotlin synchrone, tests aller-retour `.qrevise` dans le selftest
 
 ## [1.3.0] - 2026-09-27
 
 ### Ajouts
-- 🪟 **Vrai installateur Windows `.exe`** : installe l'application dans le système, crée les raccourcis **Bureau** et **menu Démarrer**, avec désinstallation depuis les réglages Windows (JRE embarqué, rien d'autre à installer)
-- 🐧 Le paquet `.deb` Linux installe désormais l'**icône** de l'app dans le menu des applications
+- 🪟 **Véritable installateur Windows `.exe`** : installe l'application dans le système, crée les raccourcis **Bureau** et **menu Démarrer**, avec désinstallation depuis les réglages Windows (JRE embarqué, rien d'autre à installer)
+- 🐧 Le paquet `.deb` Linux installe désormais l'**icône** de l'application dans le menu des applications
 - Les futures versions Windows se remplacent automatiquement (produit d'installation stable)
 
 ### Technique
 - `jpackage --type exe` avec WiX 3.14 en CI ; UUID produit fixe pour les mises à jour par-dessus l'existant
-- Icônes `.ico` / `.png` générées depuis le même design que l'app Android (`tools/GenIco.java`)
+- Icônes `.ico` / `.png` générées depuis le même design que l'application Android (`tools/GenIco.java`)
 
 ## [1.2.0] - 2026-09-27
 
 ### Améliorations
-- 🖥️ **Interface desktop refonte** (Windows/Linux) fidèle au design Material 3 d'Android : header violet, cartes arrondies, boutons pill, FAB violet, look FlatLaf
-- 🃏 **Retournement illimité des flashcards** : appuie autant de fois que tu veux pour alterner question ↔ réponse
-- ✨ **Vraie animation de retournement** (rotation 3D) sur Android, iOS et desktop — fini le simple changement de texte
+- 🖥️ **Interface desktop repensée** (Windows/Linux) fidèle au design Material 3 d'Android : en-tête violet, cartes arrondies, boutons pill, FAB violet
+- 🃏 **Retournement illimité des flashcards** : chaque appui alterne question ↔ réponse, autant de fois que souhaité
+- ✨ **Vraie animation de retournement** (rotation 3D) sur Android, iOS et desktop
 
 ## [1.1.1] - 2026-09-27
 
@@ -42,7 +42,7 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) 
 ## [1.1.0] - 2026-09-27
 
 ### Ajouts
-- 🪟 Version **Windows 10/11** : zip autonome avec JRE embarqué, rien à installer (`jpackage`)
+- 🪟 Version **Windows 10/11** : archive autonome avec JRE embarqué, rien à installer (`jpackage`)
 - 🐧 Versions **Linux** : paquet `.deb` (Debian/Ubuntu/Mint) et archive générique (Fedora & autres)
 - 🍎 Version **iOS** (SwiftUI) : IPA non signée à sideloader (AltStore/Sideloadly), vérification de mises à jour ouvrant la page GitHub
 - 🤖 Compatibilité **Android élargie : 5.0 → 16** (icônes legacy générées, une seule APK universelle tous processeurs)

@@ -98,13 +98,13 @@ jobs:
             --win-menu --win-shortcut --win-dir-chooser `
             --win-upgrade-uuid 381c7875-31dc-41ec-a229-5a40fcf556f0 `
             --dest dist
-          Move-Item "dist/QuizRevise-${{ env.VERSION }}.exe" "QuizRevise-Setup-v${{ env.VERSION }}.exe"
+          Move-Item "dist/QuizRevise-${{ env.VERSION }}.exe" "QuizRevise-Windows-Setup-v${{ env.VERSION }}.exe"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: QuizRevise-Setup-*.exe
+          path: QuizRevise-Windows-Setup-*.exe
 
   # ------------------------------------------------------------
   # Linux : .deb (Debian/Ubuntu/Mint) + archive générique (Fedora & co)
