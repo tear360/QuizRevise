@@ -26,20 +26,20 @@
     overflow: hidden;
   }
 
-  /* ---------- Header ---------- */
   header {
     background: var(--primary);
     color: #fff;
-    padding: 14px 24px;
+    padding: 12px 20px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     flex-shrink: 0;
     box-shadow: 0 2px 8px rgba(0,0,0,.18);
+    z-index: 5;
   }
-  header h1 { font-size: 20px; font-weight: 700; flex: 1; }
+  header h1 { font-size: 20px; font-weight: 700; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   header .icon-btn {
-    background: rgba(255,255,255,.14);
+    background: rgba(255,255,255,.16);
     border: none;
     color: #fff;
     width: 42px; height: 42px;
@@ -48,21 +48,22 @@
     cursor: pointer;
     display: grid; place-items: center;
     transition: background .15s;
+    flex-shrink: 0;
   }
-  header .icon-btn:hover { background: rgba(255,255,255,.28); }
+  header .icon-btn:hover { background: rgba(255,255,255,.3); }
   header .icon-btn svg { width: 21px; height: 21px; fill: #fff; }
 
-  main { flex: 1; overflow-y: auto; padding: 20px 24px 110px; }
+  main { flex: 1; overflow-y: auto; padding: 20px 24px 120px; }
   .empty {
-    margin-top: 18vh;
+    margin-top: 16vh;
     text-align: center;
     color: var(--on-variant);
     font-size: 16px;
     line-height: 1.7;
   }
   .empty .big { font-size: 52px; margin-bottom: 12px; }
+  .loading { margin-top: 40vh; text-align: center; color: var(--on-variant); }
 
-  /* ---------- Cartes (paquets / flashcards) ---------- */
   .card {
     background: var(--surface);
     border-radius: 16px;
@@ -70,33 +71,34 @@
     margin-bottom: 12px;
     box-shadow: 0 1px 3px rgba(0,0,0,.09);
     cursor: pointer;
-    transition: transform .12s, box-shadow .12s;
+    transition: box-shadow .12s;
     display: flex;
     align-items: center;
     gap: 16px;
   }
-  .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.13); }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.14); }
+  .card.static { cursor: default; }
   .dot { width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; }
   .card .info { flex: 1; min-width: 0; }
-  .card .name { font-size: 16px; font-weight: 700; }
-  .card .sub { font-size: 13px; color: var(--on-variant); margin-top: 2px; }
-  .card .actions { display: flex; gap: 8px; }
+  .card .name { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+  .card .sub { font-size: 13px; color: var(--on-variant); margin-top: 2px; overflow-wrap: anywhere; }
+  .card .actions { display: flex; gap: 8px; flex-shrink: 0; }
 
-  /* ---------- Boutons ---------- */
   .pill {
     border: none;
     border-radius: 999px;
-    padding: 10px 22px;
+    padding: 10px 20px;
     font-size: 14px;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
-    transition: filter .15s, transform .06s;
+    transition: filter .15s;
     background: var(--primary);
     color: #fff;
   }
-  .pill:hover { filter: brightness(1.1); }
-  .pill:active { transform: scale(.97); }
+  .pill:hover { filter: brightness(1.12); }
+  .pill:active { filter: brightness(.92); }
+  .pill:disabled { opacity: .55; cursor: default; }
   .pill.tonal { background: var(--primary-container); color: var(--primary-dark); }
   .pill.danger { background: #FBE9E7; color: var(--wrong); }
   .pill.correct { background: var(--correct); color: #fff; }
@@ -106,20 +108,24 @@
   .fab {
     position: fixed;
     right: 26px; bottom: 26px;
-    width: 60px; height: 60px;
-    border-radius: 50%;
+    height: 60px;
+    min-width: 60px;
     border: none;
+    border-radius: 999px;
     background: var(--primary);
     color: #fff;
-    font-size: 30px;
+    font-size: 28px;
+    font-family: inherit;
     cursor: pointer;
     box-shadow: 0 4px 14px rgba(103,80,164,.5);
-    transition: transform .15s, filter .15s;
+    transition: filter .15s;
     display: grid; place-items: center;
+    padding: 0 18px;
+    z-index: 4;
   }
-  .fab:hover { filter: brightness(1.12); transform: scale(1.06); }
+  .fab:hover { filter: brightness(1.12); }
+  .fab.text { font-size: 16px; font-weight: 700; }
 
-  /* ---------- Flipcard 3D ---------- */
   .stage { perspective: 1400px; max-width: 640px; margin: 0 auto; }
   .flip {
     position: relative;
@@ -149,21 +155,23 @@
     font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
     color: var(--primary); text-transform: uppercase;
   }
-  .face .txt { font-size: 27px; font-weight: 700; margin-top: 22px; line-height: 1.35; }
+  .face .txt { font-size: 27px; font-weight: 700; margin-top: 22px; line-height: 1.35; overflow-wrap: anywhere; }
   .face .hint { font-size: 13px; color: var(--outline); margin-top: 26px; }
 
   .quiz-q {
     max-width: 640px; margin: 0 auto 26px;
     font-size: 25px; font-weight: 700; text-align: center; line-height: 1.35;
+    overflow-wrap: anywhere;
   }
   .quiz-opts {
     max-width: 640px; margin: 0 auto;
     display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
   }
-  .quiz-opts .pill { padding: 16px 18px; font-size: 15px; background: var(--primary); }
-  .mode-choice { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 16vh; }
+  .quiz-opts .pill { padding: 16px 18px; font-size: 15px; overflow-wrap: anywhere; }
+  .mode-choice { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 15vh; }
   .mode-choice h2 { font-size: 22px; margin-bottom: 8px; }
-  .mode-choice .pill { min-width: 240px; }
+  .mode-choice .pill { min-width: 250px; }
+  .result-score { font-size: 30px; font-weight: 800; color: var(--primary); }
 
   .progress-row { max-width: 640px; margin: 0 auto 20px; text-align: center; color: var(--on-variant); font-size: 13px; }
   .progress-bar { height: 7px; border-radius: 4px; background: var(--primary-container); overflow: hidden; margin-top: 8px; }
@@ -172,17 +180,23 @@
   .flash-actions { display: flex; justify-content: center; gap: 14px; margin-top: 26px; }
   .flash-actions .pill { min-width: 150px; font-size: 15px; padding: 13px 24px; }
 
-  dialog {
-    border: none;
+  /* ---------- Modal maison (compatible partout, pas de <dialog>) ---------- */
+  .modal-back {
+    position: fixed; inset: 0;
+    background: rgba(29,27,32,.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50;
+  }
+  .modal {
+    background: var(--surface);
     border-radius: 20px;
     padding: 26px;
-    width: min(430px, 90vw);
-    box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    width: min(440px, 92vw);
+    box-shadow: 0 12px 40px rgba(0,0,0,.28);
   }
-  dialog::backdrop { background: rgba(0,0,0,.35); }
-  dialog h2 { font-size: 18px; margin-bottom: 16px; }
-  dialog label { display: block; font-size: 13px; font-weight: 600; color: var(--on-variant); margin: 12px 0 4px; }
-  dialog input, dialog select {
+  .modal h2 { font-size: 18px; margin-bottom: 14px; }
+  .modal label { display: block; font-size: 13px; font-weight: 600; color: var(--on-variant); margin: 12px 0 4px; }
+  .modal input {
     width: 100%;
     padding: 11px 13px;
     border: 1.5px solid var(--outline);
@@ -192,28 +206,28 @@
     background: #fff;
     color: var(--on-surface);
   }
-  dialog input:focus { outline: none; border-color: var(--primary); }
-  dialog .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+  .modal input:focus { outline: none; border-color: var(--primary); }
+  .modal .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
 
-  .stats-grid { max-width: 430px; margin: 8vh auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stats-grid { max-width: 460px; margin: 6vh auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .stat {
     background: var(--surface); border-radius: 16px; padding: 22px;
     text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.09);
   }
   .stat .v { font-size: 27px; font-weight: 800; color: var(--primary); }
   .stat .l { font-size: 13px; color: var(--on-variant); margin-top: 5px; }
-  .center-title { text-align: center; font-size: 20px; margin-top: 40px; }
+  .center-title { text-align: center; font-size: 20px; margin-top: 30px; }
 </style>
 </head>
 <body>
   <header id="hdr">
-    <button class="icon-btn" id="btnBack" style="display:none">←</button>
+    <button class="icon-btn" id="btnBack" title="Retour">←</button>
     <h1 id="title">Mes paquets</h1>
     <button class="icon-btn" id="btnImport" title="Importer un fichier .qrevise" style="display:none">
       <svg viewBox="0 0 24 24"><path d="M19 15v4H5v-4H3v6h18v-6h-2zM6 9l5 5V2h2v12l5-5 1.41 1.41L12 17.83 4.59 10.41 6 9z"/></svg>
     </button>
     <button class="icon-btn" id="btnExportAll" title="Exporter tous les paquets" style="display:none">
-      <svg viewBox="0 0 24 24"><path d="M5 9v4H3v6h18v-6h-2V9c0-1.1-.9-2-2-2h-4.5V4.5a2.25 2.25 0 0 0-4.5 0V7H7c-1.1 0-2 .9-2 2zm-3 6h4v2H2v-2zm16 0h4v2h-4v-2zm-9 0h4v2H9v-2z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M5 9v4H3v6h18v-6h-2V9c0-1.1-.9-2-2-2h-4.5V4.5a2.25 2.25 0 0 0-4.5 0V7H7c-1.1 0-2 .9-2 2z"/></svg>
     </button>
     <button class="icon-btn" id="btnStats" title="Statistiques">
       <svg viewBox="0 0 24 24"><path d="M5 21V9h4v12H5zm5 0V3h4v18h-4zm5 0v-8h4v8h-4z"/></svg>
@@ -226,108 +240,142 @@
     </button>
   </header>
 
-  <main id="main"></main>
+  <main id="main"><div class="loading">Chargement…</div></main>
   <button class="fab" id="fab" style="display:none">＋</button>
+  <button class="fab text" id="fabStudy" style="display:none">▶ Réviser</button>
 
-  <dialog id="dlg">
-    <h2 id="dlgTitle"></h2>
-    <div id="dlgBody"></div>
-    <div class="row">
-      <button class="pill tonal" id="dlgCancel">Annuler</button>
-      <button class="pill" id="dlgOk">Enregistrer</button>
+  <div class="modal-back" id="modalBack" style="display:none">
+    <div class="modal">
+      <h2 id="dlgTitle"></h2>
+      <div id="dlgBody"></div>
+      <div class="row">
+        <button class="pill tonal" id="dlgCancel">Annuler</button>
+        <button class="pill" id="dlgOk">Enregistrer</button>
+      </div>
     </div>
-  </dialog>
+  </div>
 
 <script>
-// L'API native expose des chaînes JSON ; hors de l'app (aperçu navigateur), on simule des données.
-const N = window.QuizReviseNative ?? {
-  decks: () => JSON.stringify([
-    { id: 1, name: 'Anglais – Vocabulaire', color: -10166236, cardCount: 12 },
-    { id: 2, name: 'Histoire – Dates clés', color: -14145461, cardCount: 8 },
-    { id: 3, name: 'SVT – Chapitre 3', color: -12933218, cardCount: 5 }
-  ]),
-  cards: (id) => JSON.stringify([
-    { id: 1, question: 'Traduire « cat »', answer: 'chat' },
-    { id: 2, question: 'Traduire « dog »', answer: 'chien' },
-    { id: 3, question: 'Traduire « house »', answer: 'maison' },
-    { id: 4, question: 'Traduire « sun »', answer: 'soleil' }
-  ]),
-  stats: () => JSON.stringify({ todayReviews: 14, accuracy: 79, streak: 3, best: 7 }),
-  version: () => '1.4.0 (aperçu)',
-  checkUpdates: () => 'up_to_date',
-  recordSession: () => {},
-  openReleases: () => {}
-};
-const esc = s => (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const PALETTE = ['6750A4','1B873B','B3261E','0B57D0','E8590C','7A1FA2'];
+'use strict';
+// ============================================================
+// Pont natif : la page ne rend RIEN tant que Kotlin n'a pas
+// injecté window.QuizReviseNative puis appelé nativeReady().
+// (Les données de démo ne servent qu'à l'aperçu navigateur.)
+// ============================================================
+let N = null;
+
+function nativeReady() {
+  if (N) return;
+  N = window.QuizReviseNative;
+  render();
+}
+window.nativeReady = nativeReady;
+
+// Aperçu hors application (navigateur) uniquement : jamais dans l'app réelle.
+const IN_APP = /JavaFX|javafx/i.test(navigator.userAgent);
+if (!IN_APP) {
+  setTimeout(function () {
+    if (!N) { N = demoApi(); render(); }
+  }, 600);
+}
+
+function demoApi() {
+  const decks = [
+    { id: 1, name: 'Anglais – Vocabulaire', color: -10166236, cardCount: 2 },
+    { id: 2, name: 'Histoire – Dates clés', color: -14145461, cardCount: 1 }
+  ];
+  const cards = { 1: [
+    { id: 1, question: 'cat', answer: 'chat' },
+    { id: 2, question: 'dog', answer: 'chien' }
+  ], 2: [ { id: 3, question: '1789', answer: 'Révolution française' } ] };
+  let nextId = 100;
+  return {
+    decks: function () { return JSON.stringify(decks); },
+    cards: function (id) { return JSON.stringify(cards[id] || []); },
+    createDeck: function (n) { decks.unshift({ id: ++nextId, name: n, color: -10166236, cardCount: 0 }); cards[nextId] = []; },
+    renameDeck: function (id, n) { decks.find(d => d.id == id).name = n; },
+    deleteDeck: function (id) { const i = decks.findIndex(d => d.id == id); if (i >= 0) decks.splice(i, 1); },
+    addCard: function (deckId, q, a) { (cards[deckId] = cards[deckId] || []).push({ id: ++nextId, question: q, answer: a }); },
+    updateCard: function (id, q, a) {
+      for (const k in cards) { const c = cards[k].find(x => x.id == id); if (c) { c.question = q; c.answer = a; } }
+    },
+    deleteCard: function (id) {
+      for (const k in cards) { const i = cards[k].findIndex(x => x.id == id); if (i >= 0) cards[k].splice(i, 1); }
+    },
+    recordSession: function () {},
+    stats: function () { return JSON.stringify({ todayReviews: 14, accuracy: 79, streak: 3, best: 7 }); },
+    version: function () { return 'aperçu navigateur'; },
+    checkUpdates: function () { return 'up_to_date'; },
+    openReleases: function () {},
+    exportFile: function () { return false; },
+    importFile: function () { return -1; }
+  };
+}
+
+const esc = s => (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 let screen = 'decks';
 let currentDeck = null;
 let session = null;
 
-// ============ ROUTAGE ============
-function go(s) { screen = s; render(); }
-
+// ============ ROUTAGE / RENDU ============
 function render() {
+  if (!N) return;
   hideFab();
-  const hdr = document.getElementById('hdr');
-  const fab = document.getElementById('fab');
-  const title = document.getElementById('title');
-  document.getElementById('btnBack').style.display = (screen !== 'decks' && screen !== 'stats') ? '' : 'none';
-  document.getElementById('btnImport').style.display = (screen === 'decks' || screen === 'deck') ? '' : 'none';
+  document.getElementById('btnBack').style.display = screen === 'decks' ? 'none' : '';
+  const deckScreens = screen === 'decks' || screen === 'deck';
+  document.getElementById('btnImport').style.display = deckScreens ? '' : 'none';
   document.getElementById('btnExportAll').style.display = screen === 'decks' ? '' : 'none';
-  const showHdrBtns = ['decks','deck'].includes(screen);
-  for (const id of ['btnStats','btnRefresh','btnAbout']) {
-    document.getElementById(id).style.display = showHdrBtns ? '' : 'none';
-  }
-  fab.style.display = (screen === 'decks' || screen === 'deck') ? '' : 'none';
+  document.getElementById('btnStats').style.display = deckScreens ? '' : 'none';
+  document.getElementById('btnRefresh').style.display = deckScreens ? '' : 'none';
+  document.getElementById('btnAbout').style.display = deckScreens ? '' : 'none';
 
-  if (screen === 'decks') { title.textContent = 'Mes paquets'; renderDecks(); }
-  else if (screen === 'deck') { title.textContent = currentDeck.name; renderDeck(); }
-  else if (screen === 'study') { title.textContent = 'Révision'; renderStudy(); }
-  else if (screen === 'stats') { title.textContent = 'Statistiques'; renderStats(); }
+  if (screen === 'decks') { document.getElementById('title').textContent = 'Mes paquets'; renderDecks(); }
+  else if (screen === 'deck') { document.getElementById('title').textContent = currentDeck.name; renderDeck(); }
+  else if (screen === 'study') { document.getElementById('title').textContent = 'Révision'; renderStudy(); }
+  else if (screen === 'stats') { document.getElementById('title').textContent = 'Statistiques'; renderStats(); }
 }
+
+function go(s) { screen = s; render(); }
 
 // ============ PAQUETS ============
 function renderDecks() {
   const decks = JSON.parse(N.decks());
   const m = document.getElementById('main');
+  showFab(function () { deckDialog(null); });
   if (!decks.length) {
-    m.innerHTML = `<div class="empty"><div class="big">🎴</div>Aucun paquet pour l'instant.<br>Crée ton premier paquet pour commencer à réviser.</div>`;
-    document.getElementById('fab').onclick = () => deckDialog(null);
+    m.innerHTML = '<div class="empty"><div class="big">🎴</div>Aucun paquet pour l\'instant.<br>Créez votre premier paquet pour commencer à réviser.</div>';
     return;
   }
-  m.innerHTML = decks.map(d => `
-    <div class="card" data-id="${d.id}">
-      <div class="dot" style="background:#${(d.color>>>0).toString(16).padStart(8,'0').slice(-6)}"></div>
-      <div class="info">
-        <div class="name">${esc(d.name)}</div>
-        <div class="sub">${d.cardCount} carte${d.cardCount > 1 ? 's' : ''}</div>
-      </div>
-      <div class="actions">
-        <button class="pill tonal" data-act="export" title="Exporter ce paquet en .qrevise">Exporter</button>
-        <button class="pill tonal" data-act="edit">Renommer</button>
-        <button class="pill danger" data-act="del">Supprimer</button>
-      </div>
-    </div>`).join('');
-  m.querySelectorAll('.card').forEach(el => {
+  m.innerHTML = decks.map(d =>
+    '<div class="card" data-id="' + d.id + '">' +
+      '<div class="dot" style="background:#' + (d.color >>> 0).toString(16).padStart(8, '0').slice(-6) + '"></div>' +
+      '<div class="info"><div class="name">' + esc(d.name) + '</div>' +
+      '<div class="sub">' + d.cardCount + ' carte' + (d.cardCount > 1 ? 's' : '') + '</div></div>' +
+      '<div class="actions">' +
+        '<button class="pill tonal" data-act="export">Exporter</button>' +
+        '<button class="pill tonal" data-act="edit">Renommer</button>' +
+        '<button class="pill danger" data-act="del">Supprimer</button>' +
+      '</div></div>').join('');
+  m.querySelectorAll('.card').forEach(function (el) {
     const d = decks.find(x => x.id == el.dataset.id);
-    el.addEventListener('click', e => {
-      const act = e.target.closest('[data-act]')?.dataset.act;
-      if (act === 'edit') { e.stopPropagation(); deckDialog(d); }
-      else if (act === 'del') { e.stopPropagation(); confirmDeleteDeck(d); }
-      else if (act === 'export') { e.stopPropagation(); doExport(d.id, d.name); }
-      else { currentDeck = d; go('deck'); }
+    el.addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-act]');
+      if (!btn) { currentDeck = d; go('deck'); return; }
+      e.stopPropagation();
+      const act = btn.dataset.act;
+      if (act === 'edit') deckDialog(d);
+      else if (act === 'del') confirmDeleteDeck(d);
+      else if (act === 'export') doExport(d.id, d.name);
     });
   });
-  document.getElementById('fab').onclick = () => deckDialog(null);
 }
 
 function deckDialog(deck) {
   openDialog(
     deck ? 'Renommer le paquet' : 'Nouveau paquet',
-    `<label>Nom du paquet</label><input id="f_name" placeholder="ex. : Anglais – Vocabulaire" value="${esc(deck?.name || '')}">`,
-    () => {
+    '<label>Nom du paquet</label><input id="f_name" placeholder="ex. : Anglais – Vocabulaire" value="' + esc(deck ? deck.name : '') + '">',
+    function () {
       const name = document.getElementById('f_name').value.trim();
       if (!name) return false;
       if (deck) N.renameDeck(deck.id, name); else N.createDeck(name);
@@ -338,84 +386,46 @@ function deckDialog(deck) {
 }
 
 function confirmDeleteDeck(d) {
-  if (confirm(`Supprimer « ${d.name} » et toutes ses cartes ?`)) { N.deleteDeck(d.id); render(); }
+  if (confirm('Supprimer « ' + d.name + ' » et toutes ses cartes ?')) { N.deleteDeck(d.id); render(); }
 }
-
-// ============ EXPORT / IMPORT .qrevise ============
-function doExport(deckId, name) {
-  const ok = deckId > 0 ? N.exportFile(deckId, name) : N.exportFile(0, 'mes-paquets');
-  if (ok) alert('Paquet exporté ✅\n\nLe fichier .qrevise peut être importé sur n\'importe quel appareil (Android, iPhone, PC…).');
-}
-
-function doImport() {
-  const added = N.importFile();
-  if (added < 0) return; // annulé
-  if (added === 0) alert('Aucun paquet importé : le fichier est vide ou invalide.');
-  else alert(added > 1 ? `${added} paquets importés avec succès ✅` : 'Paquet importé avec succès ✅');
-  if (added > 0) render();
-}
-
-document.getElementById('btnImport').onclick = doImport;
-document.getElementById('btnExportAll').onclick = () => doExport(0, 'mes-paquets');
 
 // ============ CARTES D'UN PAQUET ============
 function renderDeck() {
   const cards = JSON.parse(N.cards(currentDeck.id));
   const m = document.getElementById('main');
-  if (!cards.length) {
-    m.innerHTML = `<div class="empty"><div class="big">🃏</div>Ce paquet est vide.<br>Ajoute ta première carte !</div>`;
-  } else {
-    m.innerHTML = cards.map(c => `
-      <div class="card" data-id="${c.id}" style="cursor:default">
-        <div class="info">
-          <div class="name">${esc(c.question)}</div>
-          <div class="sub">${esc(c.answer)}</div>
-        </div>
-        <div class="actions">
-          <button class="pill tonal" data-act="edit">Modifier</button>
-          <button class="pill danger" data-act="del">Supprimer</button>
-        </div>
-      </div>`).join('');
-    m.querySelectorAll('.card').forEach(el => {
-      const c = cards.find(x => x.id == el.dataset.id);
-      el.querySelector('[data-act="edit"]').onclick = () => cardDialog(c);
-      el.querySelector('[data-act="del"]').onclick = () => {
-        if (confirm('Supprimer cette carte ?')) { N.deleteCard(c.id); render(); }
-      };
-    });
-  }
-  const fab = document.getElementById('fab');
-  fab.textContent = '＋';
-  fab.onclick = () => cardDialog(null);
-  // FAB devient "Réviser" à gauche du + : on utilise le bouton tonal dans le header ? Non :
-  // on ajoute un bouton flottant Réviser via innerHTML
-  if (!document.getElementById('fabStudy')) {
-    const b = document.createElement('button');
-    b.id = 'fabStudy';
-    b.className = 'fab';
-    b.style.right = '100px';
-    b.style.bottom = '26px';
-    b.style.width = 'auto';
-    b.style.borderRadius = '999px';
-    b.style.padding = '0 24px';
-    b.style.fontSize = '16px';
-    b.textContent = '▶ Réviser';
-    document.body.appendChild(b);
-  }
-  const fs = document.getElementById('fabStudy');
-  fs.style.display = '';
-  fs.onclick = () => {
-    if (N.cards(currentDeck.id).length < 2) { alert('Il faut au moins 2 cartes pour lancer une session.'); return; }
+  showFab(function () { cardDialog(null); });
+  showFabStudy(function () {
+    const n = JSON.parse(N.cards(currentDeck.id)).length;
+    if (n < 2) { alert('Il faut au moins 2 cartes pour lancer une session.'); return; }
     startStudy();
-  };
+  });
+  if (!cards.length) {
+    m.innerHTML = '<div class="empty"><div class="big">🃏</div>Ce paquet est vide.<br>Ajoutez votre première carte !</div>';
+    return;
+  }
+  m.innerHTML = cards.map(c =>
+    '<div class="card static" data-id="' + c.id + '">' +
+      '<div class="info"><div class="name">' + esc(c.question) + '</div>' +
+      '<div class="sub">' + esc(c.answer) + '</div></div>' +
+      '<div class="actions">' +
+        '<button class="pill tonal" data-act="edit">Modifier</button>' +
+        '<button class="pill danger" data-act="del">Supprimer</button>' +
+      '</div></div>').join('');
+  m.querySelectorAll('.card').forEach(function (el) {
+    const c = cards.find(x => x.id == el.dataset.id);
+    el.querySelector('[data-act="edit"]').addEventListener('click', function () { cardDialog(c); });
+    el.querySelector('[data-act="del"]').addEventListener('click', function () {
+      if (confirm('Supprimer cette carte ?')) { N.deleteCard(c.id); render(); }
+    });
+  });
 }
 
 function cardDialog(card) {
   openDialog(
     card ? 'Modifier la carte' : 'Ajouter une carte',
-    `<label>Question / Recto</label><input id="f_q" value="${esc(card?.question || '')}">
-     <label>Réponse / Verso</label><input id="f_a" value="${esc(card?.answer || '')}">`,
-    () => {
+    '<label>Question / Recto</label><input id="f_q" value="' + esc(card ? card.question : '') + '">' +
+    '<label>Réponse / Verso</label><input id="f_a" value="' + esc(card ? card.answer : '') + '">',
+    function () {
       const q = document.getElementById('f_q').value.trim();
       const a = document.getElementById('f_a').value.trim();
       if (!q || !a) return false;
@@ -429,7 +439,7 @@ function cardDialog(card) {
 // ============ RÉVISION ============
 function startStudy() {
   const cards = JSON.parse(N.cards(currentDeck.id));
-  session = { cards, order: cards.map((_, i) => i).sort(() => Math.random() - .5), pos: 0, correct: 0, mode: null, answered: false };
+  session = { cards: cards, order: cards.map((_, i) => i).sort(() => Math.random() - .5), pos: 0, correct: 0, mode: null, answered: false };
   go('study');
 }
 
@@ -437,71 +447,65 @@ function renderStudy() {
   hideFab();
   const m = document.getElementById('main');
   if (!session.mode) {
-    m.innerHTML = `
-      <div class="mode-choice">
-        <h2>Comment veux-tu réviser ?</h2>
-        <button class="pill big" onclick="beginMode('flash')">🃏 Flashcards</button>
-        <button class="pill big" onclick="beginMode('quiz')">❓ QCM</button>
-      </div>`;
+    m.innerHTML = '<div class="mode-choice"><h2>Comment veux-tu réviser ?</h2>' +
+      '<button class="pill big" id="mFlash">🃏 Flashcards</button>' +
+      '<button class="pill big" id="mQuiz">❓ QCM</button></div>';
+    document.getElementById('mFlash').addEventListener('click', function () { beginMode('flash'); });
+    document.getElementById('mQuiz').addEventListener('click', function () { beginMode('quiz'); });
     return;
   }
   if (session.pos >= session.order.length) {
     const pct = Math.round(session.correct * 100 / session.order.length);
-    m.innerHTML = `
-      <div class="mode-choice">
-        <h2>Session terminée !</h2>
-        <div style="font-size:30px;font-weight:800;color:var(--primary)">Score : ${session.correct} / ${session.order.length} (${pct}%)</div>
-        <button class="pill big" onclick="beginMode(session.mode)">Recommencer</button>
-        <button class="pill big tonal" onclick="endStudy()">Retour au paquet</button>
-      </div>`;
     N.recordSession(session.order.length, session.correct);
+    m.innerHTML = '<div class="mode-choice"><h2>Session terminée !</h2>' +
+      '<div class="result-score">Score : ' + session.correct + ' / ' + session.order.length + ' (' + pct + '%)</div>' +
+      '<button class="pill big" id="rAgain">Recommencer</button>' +
+      '<button class="pill big tonal" id="rBack">Retour au paquet</button></div>';
+    document.getElementById('rAgain').addEventListener('click', function () { beginMode(session.mode); });
+    document.getElementById('rBack').addEventListener('click', endStudy);
     return;
   }
   const card = session.cards[session.order[session.pos]];
   const prog = Math.round(session.pos * 100 / session.order.length);
+  const progHtml = '<div class="progress-row">' + (session.pos + 1) + ' / ' + session.order.length +
+    '<div class="progress-bar"><div style="width:' + prog + '%"></div></div></div>';
+
   if (session.mode === 'flash') {
-    m.innerHTML = `
-      <div class="progress-row">Carte ${session.pos + 1} / ${session.order.length}
-        <div class="progress-bar"><div style="width:${prog}%"></div></div>
-      </div>
-      <div class="stage">
-        <div class="flip" id="flip" onclick="doFlip()">
-          <div class="face front">
-            <div class="side">Question</div>
-            <div class="txt">${esc(card.question)}</div>
-            <div class="hint">Clique sur la carte pour la retourner</div>
-          </div>
-          <div class="face back">
-            <div class="side">Réponse</div>
-            <div class="txt">${esc(card.answer)}</div>
-            <div class="hint">Clique encore pour revoir la question</div>
-          </div>
-        </div>
-      </div>
-      <div class="flash-actions" id="flashActions" style="visibility:hidden">
-        <button class="pill wrong" onclick="answerFlash(false)">Pas su</button>
-        <button class="pill correct" onclick="answerFlash(true)">Je savais</button>
-      </div>`;
+    m.innerHTML = progHtml +
+      '<div class="stage"><div class="flip" id="flip">' +
+        '<div class="face front"><div class="side">Question</div><div class="txt">' + esc(card.question) + '</div>' +
+        '<div class="hint">Cliquez sur la carte pour la retourner</div></div>' +
+        '<div class="face back"><div class="side">Réponse</div><div class="txt">' + esc(card.answer) + '</div>' +
+        '<div class="hint">Cliquez encore pour revoir la question</div></div>' +
+      '</div></div>' +
+      '<div class="flash-actions" id="flashActions" style="visibility:hidden">' +
+        '<button class="pill wrong" id="btnDidnt">Pas su</button>' +
+        '<button class="pill correct" id="btnKnew">Je savais</button>' +
+      '</div>';
+    const flip = document.getElementById('flip');
+    flip.addEventListener('click', function () {
+      flip.classList.toggle('flipped');
+      document.getElementById('flashActions').style.visibility = 'visible';
+    });
+    document.getElementById('btnDidnt').addEventListener('click', function () { answerFlash(false); });
+    document.getElementById('btnKnew').addEventListener('click', function () { answerFlash(true); });
   } else {
-    const distractors = session.cards.map(c => c.answer).filter(a => a !== card.answer).filter((v,i,arr)=>arr.indexOf(v)===i).sort(() => Math.random()-.5).slice(0,3);
-    const opts = [...distractors, card.answer].sort(() => Math.random() - .5);
-    m.innerHTML = `
-      <div class="progress-row">Question ${session.pos + 1} / ${session.order.length}
-        <div class="progress-bar"><div style="width:${prog}%"></div></div>
-      </div>
-      <div class="quiz-q">${esc(card.question)}</div>
-      <div class="quiz-opts">
-        ${opts.map(o => `<button class="pill" data-opt="${esc(o)}" onclick="answerQuiz(this,'${esc(o).replace(/'/g, "\\'")}')">${esc(o)}</button>`).join('')}
-      </div>`;
+    const seen = {};
+    const distractors = session.cards.map(c => c.answer).filter(a =>
+      a !== card.answer && !seen[a] && a.trim() !== '' ? (seen[a] = 1, true) : false
+    ).sort(() => Math.random() - .5).slice(0, 3);
+    const opts = distractors.concat([card.answer]).sort(() => Math.random() - .5);
+    m.innerHTML = progHtml +
+      '<div class="quiz-q">' + esc(card.question) + '</div>' +
+      '<div class="quiz-opts">' + opts.map((o, i) =>
+        '<button class="pill" data-i="' + i + '">' + esc(o) + '</button>').join('') + '</div>';
+    m.querySelectorAll('.quiz-opts .pill').forEach(function (btn) {
+      btn.addEventListener('click', function () { answerQuiz(btn, opts[parseInt(btn.dataset.i, 10)]); });
+    });
   }
 }
 
 function beginMode(mode) { session.mode = mode; session.pos = 0; session.correct = 0; render(); }
-
-function doFlip() {
-  document.getElementById('flip').classList.toggle('flipped');
-  document.getElementById('flashActions').style.visibility = 'visible';
-}
 
 function answerFlash(ok) {
   if (ok) session.correct++;
@@ -517,12 +521,15 @@ function answerQuiz(btn, opt) {
   if (good) session.correct++;
   btn.classList.add(good ? 'correct' : 'wrong');
   if (!good) {
-    document.querySelectorAll('.quiz-opts .pill').forEach(b => {
-      if (b.dataset.opt === card.answer) b.classList.add('correct');
+    document.querySelectorAll('.quiz-opts .pill').forEach(function (b) {
+      if (!b.classList.contains('correct') && optsOf(b) === card.answer) b.classList.add('correct');
     });
   }
-  setTimeout(() => { session.answered = false; session.pos++; render(); }, 850);
+  setTimeout(function () { session.answered = false; session.pos++; render(); }, 850);
 }
+
+// Associe chaque bouton QCM à son texte (source de vérité = le DOM)
+function optsOf(btn) { return btn.textContent; }
 
 function endStudy() { go('deck'); }
 
@@ -530,39 +537,35 @@ function endStudy() { go('deck'); }
 function renderStats() {
   hideFab();
   const s = JSON.parse(N.stats());
-  document.getElementById('main').innerHTML = `
-    <div class="center-title">📊 Ta progression</div>
-    <div class="stats-grid">
-      <div class="stat"><div class="v">${s.todayReviews}</div><div class="l">cartes revues aujourd'hui</div></div>
-      <div class="stat"><div class="v">${s.accuracy}%</div><div class="l">précision du jour</div></div>
-      <div class="stat"><div class="v">${s.streak}</div><div class="l">jours de série 🔥</div></div>
-      <div class="stat"><div class="v">${s.best}</div><div class="l">meilleure série</div></div>
-    </div>`;
+  document.getElementById('main').innerHTML =
+    '<div class="center-title">📊 Votre progression</div>' +
+    '<div class="stats-grid">' +
+      '<div class="stat"><div class="v">' + s.todayReviews + '</div><div class="l">cartes revues aujourd\'hui</div></div>' +
+      '<div class="stat"><div class="v">' + s.accuracy + '%</div><div class="l">précision du jour</div></div>' +
+      '<div class="stat"><div class="v">' + s.streak + '</div><div class="l">jours de série 🔥</div></div>' +
+      '<div class="stat"><div class="v">' + s.best + '</div><div class="l">meilleure série</div></div>' +
+    '</div>';
 }
 
 function showAbout() {
-  const v = N.version();
-  alert(`QuizRévise ${v}\n\nAlternative libre à Quizlet : flashcards, QCM et statistiques.\nFonctionne hors-ligne, données stockées en local.\n\nMises à jour : https://github.com/tear360/QuizRevise/releases/latest`);
+  alert('QuizRévise ' + N.version() + '\n\nAlternative libre à Quizlet : flashcards, QCM et statistiques.\nFonctionne hors-ligne, données stockées en local.\n\nMises à jour : https://github.com/tear360/QuizRevise/releases/latest');
 }
 
 function checkUpdates(manual) {
   const r = N.checkUpdates();
   if (r === 'error') { if (manual) alert('Impossible de vérifier les mises à jour (connexion ?)'); return; }
-  if (r === 'up_to_date') { if (manual) alert(`Vous avez déjà la dernière version (${N.version()}).`); return; }
-  if (confirm(`La version ${r} est disponible (version actuelle : ${N.version()}).\n\nTélécharger et installer maintenant ?\nL'application se fermera pour lancer l'installation.`)) {
-    startDownload(r);
+  if (r === 'up_to_date') { if (manual) alert('Vous avez déjà la dernière version (' + N.version() + ').'); return; }
+  if (confirm('La version ' + r + ' est disponible (version actuelle : ' + N.version() + ').\n\nTélécharger et installer maintenant ?\nL\'application se fermera pour lancer l\'installation.')) {
+    startDownload();
   }
 }
 
-// ---- Téléchargement + installation automatiques ----
-function startDownload(ver) {
+function startDownload() {
   const r = N.downloadAndInstall();
   if (r === 'error' || r === 'no_asset') {
     alert('Téléchargement impossible pour le moment.\nVous pouvez télécharger manuellement depuis la page GitHub.');
     N.openReleases();
-    return;
   }
-  // r === 'started' : l'overlay de progression est piloté par updateProgress/updateDone
 }
 
 function updateProgress(pct) {
@@ -570,13 +573,12 @@ function updateProgress(pct) {
   if (!ov) {
     ov = document.createElement('div');
     ov.id = 'upOverlay';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(29,27,32,.55);display:flex;align-items:center;justify-content:center;z-index:999';
-    ov.innerHTML = `<div style="background:var(--surface);border-radius:20px;padding:30px 40px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.3);min-width:320px">
-      <div style="font-size:17px;font-weight:700;margin-bottom:6px">Téléchargement de la mise à jour…</div>
-      <div id="upPct" style="font-size:34px;font-weight:800;color:var(--primary)">0%</div>
-      <div class="progress-bar" style="margin-top:14px"><div id="upBar" style="width:0%"></div></div>
-      <div style="font-size:12.5px;color:var(--on-variant);margin-top:12px">L'installateur sera lancé automatiquement.</div>
-    </div>`;
+    ov.className = 'modal-back';
+    ov.innerHTML = '<div class="modal" style="text-align:center">' +
+      '<h2>Téléchargement de la mise à jour…</h2>' +
+      '<div id="upPct" style="font-size:36px;font-weight:800;color:var(--primary)">0%</div>' +
+      '<div class="progress-bar" style="margin-top:14px"><div id="upBar" style="width:0%"></div></div>' +
+      '<div style="font-size:12.5px;color:var(--on-variant);margin-top:12px">L\'installateur sera lancé automatiquement.</div></div>';
     document.body.appendChild(ov);
   }
   document.getElementById('upPct').textContent = pct + '%';
@@ -586,44 +588,77 @@ function updateProgress(pct) {
 function updateDone(success) {
   const ov = document.getElementById('upOverlay');
   if (success) {
-    if (ov) ov.querySelector('div > div').textContent = 'Installation lancée !\nL\'application va se fermer.';
+    if (ov) ov.querySelector('.modal h2').textContent = 'Installation lancée ! L\'application va se fermer.';
   } else {
-    ov?.remove();
+    if (ov) ov.remove();
     alert('Échec du téléchargement.\nVous pouvez réessayer plus tard ou télécharger manuellement depuis GitHub.');
     N.openReleases();
   }
 }
 
-// ============ DIALOG GÉNÉRIQUE ============
+// ============ EXPORT / IMPORT .qrevise ============
+function doExport(deckId, name) {
+  const ok = N.exportFile(deckId, name);
+  if (ok) alert('Paquet exporté ✅\n\nLe fichier .qrevise peut être importé sur n\'importe quel appareil (Android, iPhone, PC…).');
+}
+
+function doImport() {
+  const added = N.importFile();
+  if (added < 0) return;
+  if (added === 0) alert('Aucun paquet importé : le fichier est vide ou invalide.');
+  else alert(added > 1 ? added + ' paquets importés avec succès ✅' : 'Paquet importé avec succès ✅');
+  if (added > 0) render();
+}
+
+// ============ MODAL MAISON ============
 function openDialog(title, bodyHtml, onOk) {
   document.getElementById('dlgTitle').textContent = title;
   document.getElementById('dlgBody').innerHTML = bodyHtml;
-  const dlg = document.getElementById('dlg');
+  const back = document.getElementById('modalBack');
   const ok = document.getElementById('dlgOk');
   const cancel = document.getElementById('dlgCancel');
-  const close = () => { dlg.close(); ok.onclick = null; cancel.onclick = null; };
-  ok.onclick = () => { if (onOk()) close(); };
+  function close() { back.style.display = 'none'; ok.onclick = null; cancel.onclick = null; }
+  ok.onclick = function () { if (onOk()) close(); };
   cancel.onclick = close;
-  dlg.showModal();
-  setTimeout(() => document.getElementById('dlg')?.querySelector('input')?.focus(), 60);
+  back.style.display = 'flex';
+  const input = back.querySelector('input');
+  if (input) { input.focus(); input.select(); }
 }
 
+// ============ FAB ============
+function showFab(onClick) {
+  const f = document.getElementById('fab');
+  f.textContent = '＋';
+  f.style.display = 'grid';
+  f.onclick = onClick;
+}
+function showFabStudy(onClick) {
+  const f = document.getElementById('fabStudy');
+  f.style.display = 'grid';
+  f.onclick = onClick;
+}
 function hideFab() {
   document.getElementById('fab').style.display = 'none';
-  document.getElementById('fabStudy')?.style.setProperty('display', 'none');
+  document.getElementById('fabStudy').style.display = 'none';
 }
 
-// ============ ÉVÉNEMENTS HEADER ============
-document.getElementById('btnBack').onclick = () => {
+// ============ ÉVÉNEMENTS GLOBAUX ============
+document.getElementById('btnBack').addEventListener('click', function () {
   if (screen === 'study') { if (confirm('Quitter la session en cours ?')) go('deck'); }
   else if (screen === 'deck') go('decks');
-  else if (screen === 'stats') go('decks');
-};
-document.getElementById('btnStats').onclick = () => go('stats');
-document.getElementById('btnRefresh').onclick = () => checkUpdates(true);
-document.getElementById('btnAbout').onclick = showAbout;
-
-render();
+  else go('decks');
+});
+document.getElementById('btnStats').addEventListener('click', function () { go('stats'); });
+document.getElementById('btnRefresh').addEventListener('click', function () { checkUpdates(true); });
+document.getElementById('btnAbout').addEventListener('click', showAbout);
+document.getElementById('btnImport').addEventListener('click', doImport);
+document.getElementById('btnExportAll').addEventListener('click', function () { doExport(0, 'mes-paquets'); });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    const back = document.getElementById('modalBack');
+    if (back.style.display !== 'none') { back.style.display = 'none'; }
+  }
+});
 </script>
 </body>
 </html>

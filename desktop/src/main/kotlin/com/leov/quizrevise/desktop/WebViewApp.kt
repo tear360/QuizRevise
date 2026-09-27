@@ -52,6 +52,9 @@ object DesktopUi {
                     if (state == Worker.State.SUCCEEDED) {
                         (engine.executeScript("window") as JSObject)
                             .setMember("QuizReviseNative", NativeApi(engine))
+                        // La page n'affiche rien tant que nativeReady() n'est pas appelé :
+                        // garantit que le pont existe avant le premier rendu.
+                        engine.executeScript("nativeReady && nativeReady()")
                     }
                 }
             }
