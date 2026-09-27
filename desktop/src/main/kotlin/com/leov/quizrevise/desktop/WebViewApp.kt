@@ -17,6 +17,12 @@ import netscape.javascript.JSObject
 import org.json.JSONArray
 import org.json.JSONObject
 
+/** Petit utilitaire d'échappement JSON pour injecter des chaînes sûres dans le JS. */
+object JSONizer {
+    fun str(s: String): String = "\"" +
+        s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "") + "\""
+}
+
 /**
  * Application desktop : interface en HTML/CSS/JS (Material 3) rendue par le WebView JavaFX.
  * Le JS appelle l'API native via window.QuizReviseNative.
@@ -166,50 +172,79 @@ object DesktopUi {
 
         fun version(): String = BuildConfig.VERSION
 
-        /** Renvoie la nouvelle version dispo, "up_to_date", ou "error". */
-        fun checkUpdates(): String {
-            val release = GitHubUpdater.fetchLatest() ?: return "error"
-            return if (GitHubUpdater.isNewer(release.version, BuildConfig.VERSION)) release.version else "up_to_date"
+        /**
+         * Vérification ASYNCHRONE (jamais sur le thread UI — c'était la cause des
+         * freezes) : le résultat est poussé au JS via updateCheckResult(json).
+         */
+        fun checkUpdatesAsync(manual: Boolean) {
+            Thread {
+                val release = GitHubUpdater.fetchLatest()
+                val result = when {
+                    release == null -> "error"
+                    GitHubUpdater.isNewer(release.version, BuildConfig.VERSION) -> release.version
+                    else -> "up_to_date"
+                }
+                Platform.runLater {
+                    callJsSafe("updateCheckResult('$result', $manual)")
+                }
+            }.start()
         }
 
         /**
          * Télécharge l'installateur de la dernière version depuis GitHub puis le lance.
-         * Progression poussée au JS via updateProgress(pct). Renvoie "ok", "error" ou "no_asset".
+         * Tout se passe en arrière-plan ; l'UI est pilotée via updateProgress/updateDone/updateFailed.
          */
-        fun downloadAndInstall(): String {
-            val release = GitHubUpdater.fetchLatest() ?: return "error"
-            val url = release.downloadUrl ?: return "no_asset"
-            if (!GitHubUpdater.isNewer(release.version, BuildConfig.VERSION)) return "up_to_date"
-
-            val os = System.getProperty("os.name").lowercase()
-            val ext = if (os.contains("win")) ".exe" else ".deb"
-            val dest = java.io.File(
-                System.getProperty("java.io.tmpdir"),
-                "QuizRevise-Setup-v${release.version}$ext"
-            )
-
+        fun downloadAndInstall() {
             Thread {
+                val release = GitHubUpdater.fetchLatest()
+                if (release == null) {
+                    Platform.runLater { callJsSafe("updateFailed('Version introuvable (connexion ?)')") }
+                    return@Thread
+                }
+                if (!GitHubUpdater.isNewer(release.version, BuildConfig.VERSION)) {
+                    Platform.runLater { callJsSafe("updateFailed('Vous avez déjà la dernière version.')") }
+                    return@Thread
+                }
+                val url = release.downloadUrl
+                if (url == null) {
+                    Platform.runLater { callJsSafe("updateFailed('Aucun installateur disponible pour votre système dans cette release.')") }
+                    return@Thread
+                }
+
+                val os = System.getProperty("os.name").lowercase()
+                val ext = if (os.contains("win")) ".exe" else ".deb"
+                val dest = java.io.File(
+                    System.getProperty("java.io.tmpdir"),
+                    "QuizRevise-Windows-Setup-v${release.version}$ext".let {
+                        if (os.contains("win")) it else "QuizRevise-Linux-deb-v${release.version}$ext"
+                    }
+                )
+
                 val ok = GitHubUpdater.download(url, dest) { pct ->
                     Platform.runLater { callJsSafe("updateProgress($pct)") }
                 }
+                if (ok == null) {
+                    Platform.runLater { callJsSafe("updateFailed('Échec du téléchargement.')") }
+                    return@Thread
+                }
+                val launched = runInstaller(dest, os)
                 Platform.runLater {
-                    if (ok != null) {
+                    if (launched) {
                         callJsSafe("updateDone(true)")
-                        if (runInstaller(dest, os)) exitForUpgrade()
+                        exitForUpgrade()
                     } else {
-                        callJsSafe("updateDone(false)")
+                        callJsSafe("updateFailed('Installateur lancé manuellement si besoin : ' + ${JSONizer.str(dest.absolutePath)})")
                     }
                 }
             }.start()
-            return "started"
         }
 
-        /** Lance l'installateur téléchargé (élévation UAC gérée par l'OS). */
+        /** Lance l'installateur téléchargé (élévation UAC / pkexec gérées par l'OS). */
         private fun runInstaller(file: java.io.File, os: String): Boolean = try {
             val cmd = if (os.contains("win"))
                 arrayOf("cmd", "/c", "start", "", file.absolutePath)
             else
-                arrayOf("bash", "-c", "x-terminal-emulator -e 'sudo dpkg -i \"'" + file.absolutePath + "'\" 2>/dev/null || xterm -e 'sudo dpkg -i \"'" + file.absolutePath + "'\"' || pkexec apt install -y '" + file.absolutePath + "'")
+                arrayOf("bash", "-c", "pkexec dpkg -i '${file.absolutePath}' 2>/dev/null || x-terminal-emulator -e 'sudo dpkg -i \"${file.absolutePath}\"' 2>/dev/null || xterm -e 'sudo dpkg -i \"${file.absolutePath}\"'")
             Runtime.getRuntime().exec(cmd)
             true
         } catch (_: Exception) {
@@ -218,8 +253,10 @@ object DesktopUi {
 
         /** Ferme l'application proprement pour laisser l'installateur remplacer les fichiers. */
         private fun exitForUpgrade() {
-            Thread.sleep(1500)
-            Platform.exit()
+            Thread {
+                Thread.sleep(1500)
+                Platform.exit()
+            }.start()
         }
 
         private fun callJsSafe(js: String) {

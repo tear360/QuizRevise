@@ -305,7 +305,8 @@ function demoApi() {
     recordSession: function () {},
     stats: function () { return JSON.stringify({ todayReviews: 14, accuracy: 79, streak: 3, best: 7 }); },
     version: function () { return 'aperçu navigateur'; },
-    checkUpdates: function () { return 'up_to_date'; },
+    checkUpdatesAsync: function (manual) { setTimeout(function () { updateCheckResult('up_to_date', manual); }, 300); },
+    downloadAndInstall: function () {},
     openReleases: function () {},
     exportFile: function () { return false; },
     importFile: function () { return -1; }
@@ -552,20 +553,30 @@ function showAbout() {
 }
 
 function checkUpdates(manual) {
-  const r = N.checkUpdates();
-  if (r === 'error') { if (manual) alert('Impossible de vérifier les mises à jour (connexion ?)'); return; }
-  if (r === 'up_to_date') { if (manual) alert('Vous avez déjà la dernière version (' + N.version() + ').'); return; }
-  if (confirm('La version ' + r + ' est disponible (version actuelle : ' + N.version() + ').\n\nTélécharger et installer maintenant ?\nL\'application se fermera pour lancer l\'installation.')) {
-    startDownload();
+  // Asynchrone : le résultat arrivera via updateCheckResult()
+  N.checkUpdatesAsync(!!manual);
+}
+
+function updateCheckResult(result, manual) {
+  if (result === 'error') {
+    if (manual) alert('Impossible de vérifier les mises à jour (connexion ?)');
+    return;
+  }
+  if (result === 'up_to_date') {
+    if (manual) alert('Vous avez déjà la dernière version (' + N.version() + ').');
+    return;
+  }
+  if (confirm('La version ' + result + ' est disponible (version actuelle : ' + N.version() + ').\n\nTélécharger et installer maintenant ?\nL\'application se fermera pour lancer l\'installation.')) {
+    updateProgress(0);
+    N.downloadAndInstall();
   }
 }
 
-function startDownload() {
-  const r = N.downloadAndInstall();
-  if (r === 'error' || r === 'no_asset') {
-    alert('Téléchargement impossible pour le moment.\nVous pouvez télécharger manuellement depuis la page GitHub.');
-    N.openReleases();
-  }
+function updateFailed(msg) {
+  const ov = document.getElementById('upOverlay');
+  if (ov) ov.remove();
+  alert(msg + '\n\nVous pouvez télécharger manuellement depuis la page GitHub.');
+  N.openReleases();
 }
 
 function updateProgress(pct) {
