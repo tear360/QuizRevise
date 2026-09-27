@@ -7,7 +7,12 @@ fun main(args: Array<String>) {
         return
     }
     // Interface = page HTML/CSS/JS rendue dans un WebView JavaFX (voir DesktopUi).
-    System.setProperty("prism.lcdtext", "false")
-    System.setProperty("prism.text", "t2k")
-    DesktopUi.launch(uitest = args.contains("--uitest"))
+    val uitest = args.contains("--uitest")
+    if (uitest) {
+        // Import/export sans fenêtre de fichier pour le test automatisé.
+        System.setProperty("quizrevise.uitest", "true")
+    }
+    // Les polices sont rendues par DirectWrite (défaut Windows) : le rendu T2K
+    // forcé affichait des carrés □ à la place des pictogrammes SVG/emoji.
+    DesktopUi.launch(uitest = uitest)
 }

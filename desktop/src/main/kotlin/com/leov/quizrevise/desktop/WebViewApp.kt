@@ -33,6 +33,19 @@ object DesktopUi {
     private val db = DesktopDb()
     internal var lastEngine: WebEngine? = null
 
+    /**
+     * RÉFÉRENCE FORTE vers l'API exposée au JavaScript.
+     *
+     * La Javadoc de WebEngine est explicite : setMember(), JSObject.setSlot() et
+     * JSObject.call() ne retiennent l'objet Java que par référence FAIBLE. Sans ce
+     * champ, le garbage collector supprime NativeApi après quelques minutes
+     * d'utilisation et TOUS les appels JS→Java échouent silencieusement :
+     * boutons « qui ne font rien » (import, mise à jour), erreurs
+     * « JSON Parse error: Unexpected identifier "undefined" » et « Script error. ».
+     * C'était le bug central de la v1.4.4.
+     */
+    private var nativeApi: NativeApi? = null
+
     fun launch(uitest: Boolean = false) {
         Platform.startup {
             show()
@@ -63,8 +76,10 @@ object DesktopUi {
                 ) {
                     if (state == Worker.State.SUCCEEDED) {
                         try {
+                            // nativeApi est conservé dans un champ static : voir la doc du champ.
+                            nativeApi = NativeApi(engine)
                             (engine.executeScript("window") as JSObject)
-                                .setMember("QuizReviseNative", NativeApi(engine))
+                                .setMember("QuizReviseNative", nativeApi!!)
                             // La page n'affiche rien tant que nativeReady() n'est pas appelé.
                             engine.executeScript("nativeReady && nativeReady()")
                             val st = engine.executeScript(
@@ -105,14 +120,30 @@ object DesktopUi {
 
     /**
      * API exposée au JavaScript. ATTENTION : la classe DOIT être publique,
-     * sinon le pont JSObject échoue silencieusement (page bloquée sur « Chargement… »).
+     * sinon le pont JSObject échoue silencieusement (page bloquée sur « Chargement… »),
+     * et l'instance DOIT être retenue par [nativeApi] sinon le GC la supprime
+     * après quelques minutes (voir la doc de [nativeApi]).
+     *
+     * Aucune méthode ne laisse exception traverser le pont : [guard] capture tout,
+     * affiche la cause réelle dans le bandeau de l'interface et renvoie un repli
+     * toujours exploitable par le JavaScript.
      */
     class NativeApi(private val engine: WebEngine) {
         companion object {
             var stageRef: Stage? = null
         }
 
-        fun decks(): String {
+        /** Entoure chaque appel natif : échec visible + valeur de repli, jamais d'exception. */
+        private fun <T> guard(label: String, fallback: T, block: () -> T): T = try {
+            block()
+        } catch (t: Throwable) {
+            val msg = label + " : " + (t.message ?: t.javaClass.simpleName)
+            System.err.println("QuizRevise natif — $msg")
+            Platform.runLater { callJsSafe("showError(" + JSONizer.str(msg) + ")") }
+            fallback
+        }
+
+        fun decks(): String = guard("Liste des paquets indisponible", "[]") {
             val arr = JSONArray()
             db.decks().forEach { d ->
                 arr.put(
@@ -120,18 +151,18 @@ object DesktopUi {
                         .put("color", d.color).put("cardCount", d.cardCount)
                 )
             }
-            return arr.toString()
+            arr.toString()
         }
 
-        fun cards(deckId: Long): String {
+        fun cards(deckId: Long): String = guard("Cartes indisponibles", "[]") {
             val arr = JSONArray()
             db.cards(deckId).forEach { c ->
                 arr.put(JSONObject().put("id", c.id).put("question", c.question).put("answer", c.answer))
             }
-            return arr.toString()
+            arr.toString()
         }
 
-        fun createDeck(name: String) {
+        fun createDeck(name: String): Unit = guard("Création du paquet impossible", Unit) {
             val colors = intArrayOf(
                 0xFF6750A4.toInt(), 0xFF1B873B.toInt(), 0xFFB3261E.toInt(),
                 0xFF0B57D0.toInt(), 0xFFE8590C.toInt(), 0xFF7A1FA2.toInt()
@@ -139,13 +170,15 @@ object DesktopUi {
             db.createDeck(name, colors[db.decks().size % colors.size])
         }
 
-        fun renameDeck(id: Long, name: String) = db.renameDeck(id, name)
-        fun deleteDeck(id: Long) = db.deleteDeck(id)
-        fun addCard(deckId: Long, q: String, a: String) = db.addCard(deckId, q, a)
-        fun updateCard(id: Long, q: String, a: String) = db.updateCard(id, q, a)
-        fun deleteCard(id: Long) = db.deleteCard(id)
+        fun renameDeck(id: Long, name: String): Int = guard("Renommage impossible", -1) { db.renameDeck(id, name) }
+        fun deleteDeck(id: Long): Int = guard("Suppression impossible", -1) { db.deleteDeck(id) }
+        fun addCard(deckId: Long, q: String, a: String): Long = guard("Ajout de carte impossible", -1L) { db.addCard(deckId, q, a) }
+        fun updateCard(id: Long, q: String, a: String): Int = guard("Modification impossible", -1) { db.updateCard(id, q, a) }
+        fun deleteCard(id: Long): Int = guard("Suppression impossible", -1) { db.deleteCard(id) }
 
-        fun recordSession(total: Int, correct: Int) = db.recordSession(total, correct)
+        fun recordSession(total: Int, correct: Int): Unit = guard("Enregistrement de session impossible", Unit) {
+            db.recordSession(total, correct)
+        }
 
         /**
          * Exporte un paquet (deckId>0) ou tout (deckId<=0). Asynchrone : les boîtes de
@@ -154,42 +187,62 @@ object DesktopUi {
          */
         fun exportFile(deckId: Long, suggestedName: String) {
             Platform.runLater {
-                val chooser = FileChooser().apply {
-                    title = "Exporter le paquet"
-                    extensionFilters.add(FileChooser.ExtensionFilter("Paquet QuizRévise (*.qrevise)", "*.qrevise"))
-                    initialFileName = suggestedName.ifBlank { "paquet" }
-                        .replace(Regex("[\\\\/:*?\"<>|]"), "_") + ".qrevise"
+                try {
+                    val chooser = FileChooser().apply {
+                        title = "Exporter le paquet"
+                        extensionFilters.add(FileChooser.ExtensionFilter("Paquet QuizRévise (*.qrevise)", "*.qrevise"))
+                        initialFileName = suggestedName.ifBlank { "paquet" }
+                            .replace(Regex("[\\\\/:*?\"<>|]"), "_") + ".qrevise"
+                    }
+                    val file = chooser.showSaveDialog(stageRef)
+                    if (file == null) { callJsSafe("exportDone(false)"); return@runLater }
+                    val json = if (deckId > 0) Transfer.exportDeckJson(db, deckId) else Transfer.exportAllJson(db)
+                    val ok = try {
+                        file.writeText(json, Charsets.UTF_8); true
+                    } catch (_: Exception) { false }
+                    callJsSafe("exportDone($ok)")
+                } catch (t: Throwable) {
+                    System.err.println("QuizRevise export — $t")
+                    callJsSafe("exportDone(false)")
+                    callJsSafe("showError(" + JSONizer.str("Export impossible : " + (t.message ?: t)) + ")")
                 }
-                val file = chooser.showSaveDialog(stageRef)
-                if (file == null) { callJsSafe("exportDone(false)"); return@runLater }
-                val json = if (deckId > 0) Transfer.exportDeckJson(db, deckId) else Transfer.exportAllJson(db)
-                val ok = try {
-                    file.writeText(json, Charsets.UTF_8); true
-                } catch (_: Exception) { false }
-                callJsSafe("exportDone($ok)")
             }
         }
 
-        /** Importe des fichiers .qrevise (asynchrone) — résultat au JS via importDone(n). */
+        /** Importe des fichiers .qrevise (asynchrone) — résultat au JS via importDone(n) ou importFailed(msg). */
         fun importFile() {
             Platform.runLater {
-                val chooser = FileChooser().apply {
-                    title = "Importer des paquets QuizRévise"
-                    extensionFilters.add(FileChooser.ExtensionFilter("Paquets QuizRévise (*.qrevise)", "*.qrevise"))
+                try {
+                    // Mode test automatisé : pas de fenêtre de fichier, accusé direct.
+                    if (System.getProperty("quizrevise.uitest") == "true") {
+                        println("QuizRevise uitest: import sans dialogue")
+                        callJsSafe("importDone(-1)")
+                        return@runLater
+                    }
+                    val chooser = FileChooser().apply {
+                        title = "Importer des paquets QuizRévise"
+                        extensionFilters.add(FileChooser.ExtensionFilter("Paquets QuizRévise (*.qrevise)", "*.qrevise"))
+                    }
+                    val files = chooser.showOpenMultipleDialog(stageRef)
+                    if (files == null) { callJsSafe("importDone(-1)"); return@runLater }
+                    var total = 0
+                    for (f in files) {
+                        try { total += Transfer.importJson(db, f.readText(Charsets.UTF_8)) } catch (_: Exception) { }
+                    }
+                    callJsSafe("importDone($total)")
+                } catch (t: Throwable) {
+                    System.err.println("QuizRevise import — $t")
+                    callJsSafe("importFailed(" + JSONizer.str(t.message ?: t.javaClass.simpleName) + ")")
                 }
-                val files = chooser.showOpenMultipleDialog(stageRef)
-                if (files == null) { callJsSafe("importDone(-1)"); return@runLater }
-                var total = 0
-                for (f in files) {
-                    try { total += Transfer.importJson(db, f.readText(Charsets.UTF_8)) } catch (_: Exception) { }
-                }
-                callJsSafe("importDone($total)")
             }
         }
 
-        fun stats(): String {
+        fun stats(): String = guard(
+            "Statistiques indisponibles",
+            "{\"todayReviews\":0,\"accuracy\":0,\"streak\":0,\"best\":0}"
+        ) {
             val (reviews, correct) = db.todayStats()
-            return JSONObject()
+            JSONObject()
                 .put("todayReviews", reviews)
                 .put("accuracy", if (reviews > 0) correct * 100 / reviews else 0)
                 .put("streak", db.currentStreak())
@@ -202,18 +255,23 @@ object DesktopUi {
         /**
          * Vérification ASYNCHRONE (jamais sur le thread UI — c'était la cause des
          * freezes) : le résultat est poussé au JS via updateCheckResult(json).
+         * Le thread est protégé : le JS reçoit TOUJOURS une réponse.
          */
         fun checkUpdatesAsync(manual: Boolean) {
             Thread {
-                val release = GitHubUpdater.fetchLatest()
-                val result = when {
-                    release == null -> "error"
-                    GitHubUpdater.isNewer(release.version, BuildConfig.VERSION) -> release.version
-                    else -> "up_to_date"
+                val result = try {
+                    val release = GitHubUpdater.fetchLatest()
+                    when {
+                        release == null -> "error"
+                        GitHubUpdater.isNewer(release.version, BuildConfig.VERSION) -> release.version
+                        else -> "up_to_date"
+                    }
+                } catch (t: Throwable) {
+                    System.err.println("QuizRevise màj — $t")
+                    "error"
                 }
-                Platform.runLater {
-                    callJsSafe("updateCheckResult('$result', $manual)")
-                }
+                println("QuizRevise màj: réponse = $result (manuel=$manual)")
+                Platform.runLater { callJsSafe("updateCheckResult('$result', $manual)") }
             }.start()
         }
 
@@ -223,44 +281,51 @@ object DesktopUi {
          */
         fun downloadAndInstall() {
             Thread {
-                val release = GitHubUpdater.fetchLatest()
-                if (release == null) {
-                    Platform.runLater { callJsSafe("updateFailed('Version introuvable (connexion ?)')") }
-                    return@Thread
-                }
-                if (!GitHubUpdater.isNewer(release.version, BuildConfig.VERSION)) {
-                    Platform.runLater { callJsSafe("updateFailed('Vous avez déjà la dernière version.')") }
-                    return@Thread
-                }
-                val url = release.downloadUrl
-                if (url == null) {
-                    Platform.runLater { callJsSafe("updateFailed('Aucun installateur disponible pour votre système dans cette release.')") }
-                    return@Thread
-                }
-
-                val os = System.getProperty("os.name").lowercase()
-                val ext = if (os.contains("win")) ".exe" else ".deb"
-                val dest = java.io.File(
-                    System.getProperty("java.io.tmpdir"),
-                    "QuizRevise-Windows-Setup-v${release.version}$ext".let {
-                        if (os.contains("win")) it else "QuizRevise-Linux-deb-v${release.version}$ext"
+                try {
+                    val release = GitHubUpdater.fetchLatest()
+                    if (release == null) {
+                        Platform.runLater { callJsSafe("updateFailed('Version introuvable (connexion ?)')") }
+                        return@Thread
                     }
-                )
+                    if (!GitHubUpdater.isNewer(release.version, BuildConfig.VERSION)) {
+                        Platform.runLater { callJsSafe("updateFailed('Vous avez déjà la dernière version.')") }
+                        return@Thread
+                    }
+                    val url = release.downloadUrl
+                    if (url == null) {
+                        Platform.runLater { callJsSafe("updateFailed('Aucun installateur disponible pour votre système dans cette release.')") }
+                        return@Thread
+                    }
 
-                val ok = GitHubUpdater.download(url, dest) { pct ->
-                    Platform.runLater { callJsSafe("updateProgress($pct)") }
-                }
-                if (ok == null) {
-                    Platform.runLater { callJsSafe("updateFailed('Échec du téléchargement.')") }
-                    return@Thread
-                }
-                val launched = runInstaller(dest, os)
-                Platform.runLater {
-                    if (launched) {
-                        callJsSafe("updateDone(true)")
-                        exitForUpgrade()
-                    } else {
-                        callJsSafe("updateFailed('Installateur lancé manuellement si besoin : ' + ${JSONizer.str(dest.absolutePath)})")
+                    val os = System.getProperty("os.name").lowercase()
+                    val ext = if (os.contains("win")) ".exe" else ".deb"
+                    val dest = java.io.File(
+                        System.getProperty("java.io.tmpdir"),
+                        "QuizRevise-Windows-Setup-v${release.version}$ext".let {
+                            if (os.contains("win")) it else "QuizRevise-Linux-deb-v${release.version}$ext"
+                        }
+                    )
+
+                    val ok = GitHubUpdater.download(url, dest) { pct ->
+                        Platform.runLater { callJsSafe("updateProgress($pct)") }
+                    }
+                    if (ok == null) {
+                        Platform.runLater { callJsSafe("updateFailed('Échec du téléchargement.')") }
+                        return@Thread
+                    }
+                    val launched = runInstaller(dest, os)
+                    Platform.runLater {
+                        if (launched) {
+                            callJsSafe("updateDone(true)")
+                            exitForUpgrade()
+                        } else {
+                            callJsSafe("updateFailed('Installateur lancé manuellement si besoin : ' + ${JSONizer.str(dest.absolutePath)})")
+                        }
+                    }
+                } catch (t: Throwable) {
+                    System.err.println("QuizRevise installation — $t")
+                    Platform.runLater {
+                        callJsSafe("updateFailed(" + JSONizer.str(t.message ?: "Erreur inattendue") + ")")
                     }
                 }
             }.start()

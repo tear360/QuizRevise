@@ -4,6 +4,15 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.4.5] - 2026-09-27
+
+### Corrections (desktop)
+- 🔧 **Correction critique : après quelques minutes d'utilisation, les boutons cessaient de répondre** (création de paquet, import, statistiques, mise à jour). L'objet qui relie l'interface au moteur n'était retenu que par une référence faible : le ramasse-miettes le supprimait et tous les appels devenaient silencieusement muets — d'où les erreurs « JSON Parse error: Unexpected identifier "undefined" », « ⚠️ Erreur JS : Script error. » et les boutons « qui ne font rien ». Le pont est désormais conservé explicitement et chaque appel natif est protégé.
+- ⚠️ **Les erreurs techniques affichent leur cause réelle** dans le bandeau en haut de l'écran, au lieu d'un message incompréhensible.
+- 🔄 La vérification de mise à jour **annonce immédiatement qu'elle est en cours** et prévient si aucune réponse n'arrive sous 15 secondes : plus jamais de clic sans effet.
+- 🖼️ **Plus de carrés □ dans l'en-tête** : tous les pictogrammes de l'interface sont désormais des icônes vectorielles (le moteur de police du WebView ne rendait pas les emoji), et le rendu de police natif Windows est rétabli.
+- 🤖 Tests automatisés étendus à **14 vérifications**, dont une pression sur le ramasse-miettes qui reproduit exactement ce bug, l'aller-retour complet de la vérification de mise à jour et de l'import, et un nom de paquet contenant emoji + guillemets — toutes validées sur Windows.
+
 ## [1.4.4] - 2026-09-27
 
 ### Corrections (desktop)
