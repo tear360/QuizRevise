@@ -29,15 +29,15 @@ struct StudyView: View {
                         .buttonStyle(.bordered).controlSize(.large)
                     Spacer()
                 case .flash, .quiz:
-                    ProgressView(value: Double(pos), total: Double(order.size))
+                    ProgressView(value: Double(pos), total: Double(order.count))
                         .padding(.horizontal)
-                    Text("\(min(pos + 1, order.size)) / \(order.size)")
+                    Text("\(min(pos + 1, order.count)) / \(order.count)")
                         .font(.caption).foregroundColor(.secondary)
                     if phase == .flash { flashCard } else { quizCard }
                 case .done:
                     Spacer()
                     Text("Session terminée !").font(.title2).bold()
-                    Text("Score : \(correct) / \(order.size) (\(correct * 100 / max(order.size, 1))%)")
+                    Text("Score : \(correct) / \(order.count) (\(correct * 100 / max(order.count, 1))%)")
                         .font(.title3).foregroundColor(.purple).bold()
                     Button("Recommencer") { start(currentMode) }
                         .buttonStyle(.borderedProminent)
@@ -133,8 +133,8 @@ struct StudyView: View {
             pos += 1
             revealed = false
             selectedOption = nil
-            if pos >= order.size {
-                onFinish(order.size, correct)
+            if pos >= order.count {
+                onFinish(order.count, correct)
                 phase = .done
             } else {
                 if phase == .quiz { prepareQuiz() }
