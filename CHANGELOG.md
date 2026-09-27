@@ -4,6 +4,14 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.4.4] - 2026-09-27
+
+### Corrections (desktop)
+- 📤 **Boutons d'import/export désormais explicites** : « 📥 Importer » et « 📤 Exporter tout » en clair dans l'en-tête (l'ancienne icône était illisible)
+- ⚠️ **Plus aucune erreur silencieuse** : tout problème s'affiche désormais dans un bandeau rouge en haut de l'écran, et les formulaires signalent les champs manquants ou une erreur technique directement dans la fenêtre
+- ⌨️ La touche **Entrée** valide les formulaires (« Enregistrer »)
+- 🤖 Nouveau mode de test automatisé qui pilote la vraie application (clics réels) : 8 vérifications — création, enregistrement, affichage, statistiques, retour, suppression — toutes validées sur Windows
+
 ## [1.4.3] - 2026-09-27
 
 ### Corrections (desktop)
