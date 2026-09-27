@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.leov.quizrevise"
-        minSdk = 26
+        minSdk = 21
         targetSdk = 36
         versionCode = ciVersionCode ?: 1
         versionName = ciVersionName ?: "1.0.0"
@@ -55,8 +55,8 @@ android {
 }
 
 dependencies {
-    implementation("androidx.appcompat:appcompat:1.8.0")
-    implementation("com.google.android.material:material:1.14.0")
-    implementation("androidx.recyclerview:recyclerview:1.4.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.2.2")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 }

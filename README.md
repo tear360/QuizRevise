@@ -1,62 +1,88 @@
 # QuizRévise 🎴
 
-Application Android de révision type **Quizlet** : crée tes paquets de cartes, révise avec des **flashcards** ou des **QCM**, suis tes **statistiques** — et mets l'application à jour **automatiquement depuis GitHub**.
+Application de révision type **Quizlet**, multi-plateformes : crée tes paquets de cartes, révise avec des **flashcards** ou des **QCM**, suis tes **statistiques**.
 
-> Version d'essai **v1.0.0** — fonctionnelle, hors-ligne, sans publicité.
+| Plateforme | Paquet publié | Mise à jour |
+|---|---|---|
+| 🤖 **Android 5.0 → 16** | `QuizRevise-Android-vX.apk` (universel : arm32/64, x86) | ✅ **Automatique in-app** via GitHub Releases |
+| 🪟 **Windows 10/11** | `QuizRevise-Windows-vX.zip` (JRE embarqué, rien à installer) | 🔎 Vérification intégrée → ouvre la page des releases |
+| 🐧 **Linux** Debian/Ubuntu/Mint | `QuizRevise-Linux-deb-vX.deb` | 🔎 Vérification intégrée |
+| 🐧 **Linux** Fedora & autres | `QuizRevise-Linux-vX.tar.gz` | 🔎 Vérification intégrée |
+| 🍎 **iOS 15+** | `QuizRevise-iOS-unsigned-vX.ipa` (non signée, à sideloader) | 🔎 Vérification intégrée → ouvre la page (contrainte Apple) |
 
-## ✨ Fonctionnalités
+> Version d'essai **v1.1.0** — fonctionnelle, hors-ligne, sans publicité.
 
-- 📚 **Paquets de cartes** illimités, avec couleur et renommage
+## ✨ Fonctionnalités (identiques sur toutes les plateformes)
+
+- 📚 Paquets de cartes illimités, avec couleur et renommage
 - 🃏 **Mode Flashcards** : retourne la carte, puis « Je savais » / « Pas su »
 - ❓ **Mode QCM** : 4 choix générés automatiquement à partir des autres cartes
 - 📊 **Statistiques** : série de jours consécutifs (streak), précision, cartes revues du jour
-- 🔄 **Mise à jour automatique** : l'app interroge les GitHub Releases, télécharge le nouvel APK et propose l'installation
-- 🇫🇷 Interface 100 % en français, Material 3
-- 📴 100 % hors-ligne (données en SQLite local)
+- 🇫🇷 Interface 100 % en français
+- 📴 100 % hors-ligne (SQLite / JSON local)
 
 ## 📥 Installation
 
-Télécharge le dernier APK depuis la page [Releases](https://github.com/tear360/QuizRevise/releases/latest), puis ouvre-le sur ton téléphone (autorise l'installation d'apps inconnues si Android le demande). Android 8.0+ requis.
+### 🤖 Android
+Télécharge l'APK depuis la page [Releases](https://github.com/tear360/QuizRevise/releases/latest) et ouvre-le sur ton téléphone (autorise l'installation d'apps inconnues si demandé). Les mises à jour suivantes se font **directement dans l'app** : menu ⋮ → « Rechercher les mises à jour » (vérification silencieuse aussi à chaque ouverture).
 
-Les mises à jour suivantes se font **directement dans l'app** : menu ⋮ → « Rechercher les mises à jour » (une vérification silencieuse a aussi lieu à chaque ouverture).
+### 🪟 Windows 10/11
+1. Télécharge `QuizRevise-Windows-vX.zip` et décompresse-le où tu veux
+2. Lance `QuizRevise\QuizRevise.exe`
+3. Aucune installation : un JRE est **embarqué** dans le dossier
+
+### 🐧 Linux
+**Debian / Ubuntu / Mint :**
+```bash
+sudo apt install ./QuizRevise-Linux-deb-vX.deb
+/opt/quizrevise/bin/QuizRevise   # ou depuis le menu des applications
+```
+**Fedora / Arch / autres :**
+```bash
+tar -xzf QuizRevise-Linux-vX.tar.gz
+./QuizRevise/bin/QuizRevise
+```
+Données stockées dans `~/.local/share/QuizRevise/`.
+
+### 🍎 iOS (sideload — compte Apple gratuit OK)
+Apple interdisant l'installation hors App Store, l'IPA est **non signée** : installe-la avec [AltStore](https://altstore.io) ou [Sideloadly](https://sideloadly.io) (compte Apple ID gratuit, re-signature tous les 7 jours) — ou un compte développeur (99 €/an, validité 1 an). L'app vérifie les nouveautés sur GitHub et ouvre la page de téléchargement, mais ne peut pas s'auto-mettre à jour (contrainte Apple).
 
 ## 🏗️ Structure du projet
 
 ```
-app/src/main/java/com/leov/quizrevise/
-├── MainActivity.kt     Liste des paquets + stats + mises à jour
-├── DeckActivity.kt     Gestion des cartes d'un paquet
-├── StudyActivity.kt    Modes Flashcards et QCM
-├── AppDatabase.kt      SQLite local (paquets, cartes, stats)
-├── UpdateManager.kt    Auto-update via GitHub Releases
-└── Models.kt           Deck, Card, utilitaires JSON
-
-.github/workflows/release.yml   Build APK signé + release automatique à chaque tag v*
+app/        Android (Kotlin, Material 3) — APK signée + auto-update
+desktop/    Windows/Linux (Kotlin + Swing, SQLite) — jar gras packagé via jpackage
+ios/        iOS (SwiftUI, xcodegen) — IPA non signée
+tools/      Générateur d'icônes
+.github/workflows/release.yml   4 builds en parallèle + release unique
 ```
 
-## 🔄 Comment fonctionne la mise à jour automatique
+## 🔄 Mises à jour automatiques
 
-1. **Côté dépôt** : quand un tag `v*` est poussé (ex. `v1.0.1`), GitHub Actions compile l'APK en mode release, le signe avec le keystore du dépôt et publie une **GitHub Release** contenant `QuizRevise-v1.0.1.apk`.
-2. **Côté app** : `UpdateManager` appelle `https://api.github.com/repos/tear360/QuizRevise/releases/latest`, compare le `tag_name` à la version installée (comparaison sémantique), puis télécharge l'APK via le **DownloadManager** natif et lance l'installation (avec la permission *installer des apps inconnues* demandée proprement).
+- **Android** : l'app interroge `api.github.com/repos/tear360/QuizRevise/releases/latest`, compare les versions, télécharge l'APK (DownloadManager) et lance l'installation. Le keystore `app/quizrevise.keystore` (versionné) garantit la même signature entre les versions — indispensable pour que la mise à jour s'installe par-dessus l'existant. ⚠️ Pour un projet sérieux, déplace-le en *GitHub Secrets*.
+- **Desktop/iOS** : vérification de version intégrée + ouverture de la page des releases (pas d'auto-installation possible sur ces plateformes).
 
-⚠️ Pour qu'Android accepte une mise à jour par-dessus l'existant, l'APK doit être signé avec **la même clé** : c'est garanti ici par le keystore versionné `app/quizrevise.keystore` (alias `quizrevise`). Pour un projet sérieux, déplace ce keystore hors du dépôt et passe les mots de passe en *secrets* GitHub.
-
-## 🚀 Publier une nouvelle version
+## 🚀 Publier une nouvelle version (les 4 plateformes d'un coup)
 
 ```bash
-git tag v1.0.1
-git push origin v1.0.1
+git tag v1.1.1
+git push origin v1.1.1
 ```
 
-C'est tout : le workflow s'occupe du reste. La release apparaît quelques minutes plus tard avec l'APK signé, et toutes les apps installées la proposeront à l'utilisateur.
+Les builds Android, Windows, Linux et iOS tournent **en parallèle** (~10 min), puis une release unique est publiée avec tous les fichiers.
 
 ## 🛠️ Compiler en local
 
-Prérequis : JDK 17+, Android SDK (API 36), ou simplement Android Studio.
-
 ```bash
+# Android (JDK 17 + SDK 36)
 ./gradlew :app:assembleRelease
-# APK : app/build/outputs/apk/release/app-release.apk
+
+# Desktop : jar autonome + tests
+./gradlew :desktop:jar
+java -jar desktop/build/libs/desktop-1.1.0.jar --selftest
+
+# iOS (macOS + xcodegen)
+cd ios && xcodegen generate && xcodebuild -project QuizRevise.xcodeproj -scheme QuizRevise build
 ```
 
 ## 🧭 Inspiration
@@ -68,5 +94,4 @@ Prérequis : JDK 17+, Android SDK (API 36), ou simplement Android Studio.
 
 - Répétition espacée (algorithme type SM-2) et mode écrit (écrire la réponse)
 - Import/export de paquets (CSV, format Quizlet)
-- Partage de paquets par fichier/liens
-- Mode sombre automatique (déjà prêt via Material 3 DayNight)
+- Mode sombre automatique (déjà prêt côté Android via Material 3 DayNight)

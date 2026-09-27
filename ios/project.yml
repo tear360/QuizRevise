@@ -1,0 +1,35 @@
+name: QuizRevise
+options:
+  bundleIdPrefix: com.leov
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "1.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: "NO"
+
+targets:
+  QuizRevise:
+    type: application
+    platform: iOS
+    sources:
+      - QuizRevise
+    scheme:
+      build:
+        targets:
+          QuizRevise: all
+    info:
+      path: QuizRevise/Info.plist
+      properties:
+        CFBundleDisplayName: QuizRévise
+        CFBundleShortVersionString: "1.1.0"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight

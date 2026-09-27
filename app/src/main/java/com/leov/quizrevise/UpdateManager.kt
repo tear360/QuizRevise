@@ -186,7 +186,11 @@ object UpdateManager {
             toast(activity, R.string.update_failed)
             return
         }
-        if (!activity.packageManager.canRequestPackageInstalls()) {
+        // La permission « installer des apps inconnues » n'existe qu'à partir d'Android 8 (API 26).
+        // Sur Android 5/6/7, l'installation inconnue passe par le réglage global de l'appareil.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            !activity.packageManager.canRequestPackageInstalls()
+        ) {
             val intent = Intent(
                 Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                 Uri.parse("package:${activity.packageName}")

@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "QuizRevise"
-include(":app")
+include(":app", ":desktop")
