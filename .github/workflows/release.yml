@@ -24,8 +24,10 @@ jobs:
 
       - name: Prepare Android SDK (paquets + licences)
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          sdkmanager "platforms;android-36" "build-tools;36.0.0" > /dev/null
+          SDKM=$(ls -1 "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | tail -1)
+          echo "sdkmanager: $SDKM"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Compute version
         id: ver
