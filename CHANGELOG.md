@@ -4,6 +4,12 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.4.1] - 2026-09-27
+
+### Améliorations
+- 🪟🐧 **Mise à jour automatique complète sur Windows et Linux** : l'application télécharge elle-même le bon installateur depuis GitHub (barre de progression intégrée), le lance, puis se ferme pour laisser l'installation se faire — plus besoin de retourner sur la page des releases
+- Détection automatique du fichier adapté au système (`.exe` sur Windows, `.deb` sur Debian/Ubuntu/Mint)
+
 ## [1.4.0] - 2026-09-27
 
 ### Ajouts

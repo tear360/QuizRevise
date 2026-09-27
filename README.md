@@ -5,7 +5,7 @@ Application de révision type **Quizlet**, multi-plateformes : créez vos paquet
 | Plateforme | Paquet publié | Mises à jour |
 |---|---|---|
 | 🤖 **Android 5.0 → 16** | `QuizRevise-Android-vX.apk` (universel : arm32/64, x86) | ✅ **Automatiques in-app** via GitHub Releases |
-| 🪟 **Windows 10/11** | `QuizRevise-Windows-Setup-vX.exe` (installateur : raccourcis, désinstallation, JRE embarqué) | 🔎 Vérification intégrée → ouvre la page des releases |
+| 🪟 **Windows 10/11** | `QuizRevise-Windows-Setup-vX.exe` (installateur : raccourcis, désinstallation, JRE embarqué) | ✅ **Téléchargement + lancement de l'installateur depuis l'application** |
 | 🐧 **Linux** Debian/Ubuntu/Mint | `QuizRevise-Linux-deb-vX.deb` | 🔎 Vérification intégrée |
 | 🐧 **Linux** Fedora & autres | `QuizRevise-Linux-vX.tar.gz` | 🔎 Vérification intégrée |
 | 🍎 **iOS 15+** | `QuizRevise-iOS-unsigned-vX.ipa` (non signée, à sideloader) | 🔎 Vérification intégrée → ouvre la page (contrainte Apple) |
@@ -87,7 +87,8 @@ Les futures versions de l'application resteront compatibles (champs additionnels
 ## 🔄 Mises à jour automatiques
 
 - **Android** : l'application interroge `api.github.com/repos/tear360/QuizRevise/releases/latest`, compare les versions, télécharge l'APK (DownloadManager) et lance l'installation. Le keystore `app/quizrevise.keystore` (versionné) garantit la même signature entre les versions — indispensable pour que la mise à jour s'installe par-dessus l'existant. ⚠️ Pour un projet sérieux, déplacez-le en *GitHub Secrets*.
-- **Windows/Linux/iOS** : vérification de version intégrée + ouverture de la page des releases (pas d'auto-installation possible sur ces plateformes).
+- **Windows/Linux** : vérification intégrée, **téléchargement automatique** de l'installateur adapté au système avec barre de progression, puis lancement de l'installation (l'application se ferme pour laisser l'installateur remplacer les fichiers). Sur Windows, confirmez simplement l'élévation UAC.
+- **iOS** : vérification de version intégrée + ouverture de la page des releases (pas d'auto-installation possible sur cette plateforme).
 
 ## 🚀 Publier une nouvelle version (les 4 plateformes d'un coup)
 

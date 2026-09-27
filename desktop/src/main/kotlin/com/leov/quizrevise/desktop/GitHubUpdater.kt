@@ -1,6 +1,7 @@
 package com.leov.quizrevise.desktop
 
 import java.io.BufferedReader
+import java.io.File
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URI
@@ -44,12 +45,25 @@ object GitHubUpdater {
                 val os = System.getProperty("os.name").lowercase()
                 val isWin = os.contains("win")
                 val isLinux = os.contains("linux")
+                // Cherche d'abord l'installateur pour l'OS courant (.exe Windows / .deb Linux)
                 for (i in 0 until assets.length()) {
                     val a = assets.getJSONObject(i)
                     val n = a.optString("name", "").lowercase()
                     val url = a.optString("browser_download_url", "")
-                    val match = (isWin && n.contains("windows")) || (isLinux && n.contains("linux"))
+                    val match = (isWin && n.contains("windows") && n.endsWith(".exe")) ||
+                        (isLinux && n.contains("linux-deb") && n.endsWith(".deb"))
                     if (match) { apkLike = url; break }
+                }
+                // Repli : n'importe quel asset de la plateforme courante
+                if (apkLike == null) {
+                    for (i in 0 until assets.length()) {
+                        val a = assets.getJSONObject(i)
+                        val n = a.optString("name", "").lowercase()
+                        val url = a.optString("browser_download_url", "")
+                        if ((isWin && n.contains("windows")) || (isLinux && n.contains("linux"))) {
+                            apkLike = url; break
+                        }
+                    }
                 }
                 if (apkLike == null && assets.length() > 0) {
                     apkLike = assets.getJSONObject(0).optString("browser_download_url")
@@ -80,6 +94,39 @@ object GitHubUpdater {
         } catch (_: Exception) {
             // Environnement sans navigateur : rien de plus à faire
         }
+    }
+
+    /**
+     * Télécharge [url] vers [dest] en suivant les redirections GitHub (302 vers le CDN),
+     * avec progression en pourcentage via [onProgress]. Renvoie le fichier, ou null si échec.
+     */
+    fun download(url: String, dest: File, onProgress: (Int) -> Unit): File? = try {
+        val conn = URL(url).openConnection() as HttpURLConnection
+        conn.connectTimeout = 15_000
+        conn.readTimeout = 60_000
+        conn.instanceFollowRedirects = true
+        conn.setRequestProperty("User-Agent", "QuizRevise-Desktop")
+        val total = conn.contentLengthLong
+        dest.outputStream().use { out ->
+            conn.inputStream.use { input ->
+                val buf = ByteArray(128 * 1024)
+                var done = 0L
+                var lastPct = -1
+                while (true) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    out.write(buf, 0, n)
+                    done += n
+                    if (total > 0) {
+                        val pct = (done * 100 / total).toInt()
+                        if (pct != lastPct) { lastPct = pct; onProgress(pct) }
+                    }
+                }
+            }
+        }
+        dest
+    } catch (_: Exception) {
+        null
     }
 
     private object Desktop {

@@ -169,6 +169,60 @@ object DesktopUi {
             return if (GitHubUpdater.isNewer(release.version, BuildConfig.VERSION)) release.version else "up_to_date"
         }
 
+        /**
+         * Télécharge l'installateur de la dernière version depuis GitHub puis le lance.
+         * Progression poussée au JS via updateProgress(pct). Renvoie "ok", "error" ou "no_asset".
+         */
+        fun downloadAndInstall(): String {
+            val release = GitHubUpdater.fetchLatest() ?: return "error"
+            val url = release.downloadUrl ?: return "no_asset"
+            if (!GitHubUpdater.isNewer(release.version, BuildConfig.VERSION)) return "up_to_date"
+
+            val os = System.getProperty("os.name").lowercase()
+            val ext = if (os.contains("win")) ".exe" else ".deb"
+            val dest = java.io.File(
+                System.getProperty("java.io.tmpdir"),
+                "QuizRevise-Setup-v${release.version}$ext"
+            )
+
+            Thread {
+                val ok = GitHubUpdater.download(url, dest) { pct ->
+                    Platform.runLater { callJsSafe("updateProgress($pct)") }
+                }
+                Platform.runLater {
+                    if (ok != null) {
+                        callJsSafe("updateDone(true)")
+                        if (runInstaller(dest, os)) exitForUpgrade()
+                    } else {
+                        callJsSafe("updateDone(false)")
+                    }
+                }
+            }.start()
+            return "started"
+        }
+
+        /** Lance l'installateur téléchargé (élévation UAC gérée par l'OS). */
+        private fun runInstaller(file: java.io.File, os: String): Boolean = try {
+            val cmd = if (os.contains("win"))
+                arrayOf("cmd", "/c", "start", "", file.absolutePath)
+            else
+                arrayOf("bash", "-c", "x-terminal-emulator -e 'sudo dpkg -i \"'" + file.absolutePath + "'\" 2>/dev/null || xterm -e 'sudo dpkg -i \"'" + file.absolutePath + "'\"' || pkexec apt install -y '" + file.absolutePath + "'")
+            Runtime.getRuntime().exec(cmd)
+            true
+        } catch (_: Exception) {
+            false
+        }
+
+        /** Ferme l'application proprement pour laisser l'installateur remplacer les fichiers. */
+        private fun exitForUpgrade() {
+            Thread.sleep(1500)
+            Platform.exit()
+        }
+
+        private fun callJsSafe(js: String) {
+            try { engine.executeScript(js) } catch (_: Exception) { }
+        }
+
         fun openReleases() =
             GitHubUpdater.openDownloadPage("https://github.com/${GitHubUpdater.REPO}/releases/latest")
     }

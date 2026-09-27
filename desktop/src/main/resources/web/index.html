@@ -548,8 +548,50 @@ function showAbout() {
 function checkUpdates(manual) {
   const r = N.checkUpdates();
   if (r === 'error') { if (manual) alert('Impossible de vérifier les mises à jour (connexion ?)'); return; }
-  if (r === 'up_to_date') { if (manual) alert(`Tu as déjà la dernière version (${N.version()}).`); return; }
-  if (confirm(`La version ${r} est disponible (tu as la ${N.version()}).\n\nOuvrir la page de téléchargement ?`)) N.openReleases();
+  if (r === 'up_to_date') { if (manual) alert(`Vous avez déjà la dernière version (${N.version()}).`); return; }
+  if (confirm(`La version ${r} est disponible (version actuelle : ${N.version()}).\n\nTélécharger et installer maintenant ?\nL'application se fermera pour lancer l'installation.`)) {
+    startDownload(r);
+  }
+}
+
+// ---- Téléchargement + installation automatiques ----
+function startDownload(ver) {
+  const r = N.downloadAndInstall();
+  if (r === 'error' || r === 'no_asset') {
+    alert('Téléchargement impossible pour le moment.\nVous pouvez télécharger manuellement depuis la page GitHub.');
+    N.openReleases();
+    return;
+  }
+  // r === 'started' : l'overlay de progression est piloté par updateProgress/updateDone
+}
+
+function updateProgress(pct) {
+  let ov = document.getElementById('upOverlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'upOverlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(29,27,32,.55);display:flex;align-items:center;justify-content:center;z-index:999';
+    ov.innerHTML = `<div style="background:var(--surface);border-radius:20px;padding:30px 40px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.3);min-width:320px">
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px">Téléchargement de la mise à jour…</div>
+      <div id="upPct" style="font-size:34px;font-weight:800;color:var(--primary)">0%</div>
+      <div class="progress-bar" style="margin-top:14px"><div id="upBar" style="width:0%"></div></div>
+      <div style="font-size:12.5px;color:var(--on-variant);margin-top:12px">L'installateur sera lancé automatiquement.</div>
+    </div>`;
+    document.body.appendChild(ov);
+  }
+  document.getElementById('upPct').textContent = pct + '%';
+  document.getElementById('upBar').style.width = pct + '%';
+}
+
+function updateDone(success) {
+  const ov = document.getElementById('upOverlay');
+  if (success) {
+    if (ov) ov.querySelector('div > div').textContent = 'Installation lancée !\nL\'application va se fermer.';
+  } else {
+    ov?.remove();
+    alert('Échec du téléchargement.\nVous pouvez réessayer plus tard ou télécharger manuellement depuis GitHub.');
+    N.openReleases();
+  }
 }
 
 // ============ DIALOG GÉNÉRIQUE ============
