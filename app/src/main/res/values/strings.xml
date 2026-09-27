@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">QuizRévise</string>
+
+    <string name="decks_title">Mes paquets</string>
+    <string name="new_deck">Nouveau paquet</string>
+    <string name="deck_name_hint">Nom du paquet (ex. : Anglais – Vocabulaire)</string>
+    <string name="deck_color_hint">Couleur</string>
+    <string name="create">Créer</string>
+    <string name="cancel">Annuler</string>
+    <string name="delete">Supprimer</string>
+    <string name="rename">Renommer</string>
+    <string name="add_card">Ajouter une carte</string>
+    <string name="question_hint">Question / Recto</string>
+    <string name="answer_hint">Réponse / Verso</string>
+    <string name="save">Enregistrer</string>
+    <string name="study">Réviser</string>
+    <string name="cards_count">%1$d cartes</string>
+    <string name="empty_deck">Ce paquet est vide.\nAjoute ta première carte !</string>
+    <string name="no_deck">Aucun paquet pour l\'instant.\nCrée ton premier paquet pour commencer à réviser.</string>
+    <string name="confirm_delete_deck">Supprimer ce paquet et toutes ses cartes ?</string>
+    <string name="confirm_delete_card">Supprimer cette carte ?</string>
+
+    <string name="flashcards">Flashcards</string>
+    <string name="quiz">QCM</string>
+    <string name="session_done">Session terminée !</string>
+    <string name="score_label">Score : %1$d / %2$d (%3$d%%)</string>
+    <string name="again">Recommencer</string>
+    <string name="back_to_deck">Retour au paquet</string>
+    <string name="progress">%1$d / %2$d</string>
+    <string name="correct">Correct !</string>
+    <string name="wrong">Raté…</string>
+    <string name="show_answer">Voir la réponse</string>
+    <string name="i_knew">Je savais</string>
+    <string name="i_didnt">Pas su</string>
+    <string name="tap_to_flip">Touche la carte pour la retourner</string>
+    <string name="not_enough_cards">Il faut au moins 2 cartes pour lancer une session.</string>
+
+    <string name="stats_title">Statistiques</string>
+    <string name="streak">Série actuelle</string>
+    <string name="best_streak">Meilleure série</string>
+    <string name="accuracy">Précision</string>
+    <string name="days">jours</string>
+    <string name="studied_today">Cartes revues aujourd\'hui : %1$d</string>
+
+    <string name="menu_stats">Statistiques</string>
+    <string name="menu_check_updates">Rechercher les mises à jour</string>
+    <string name="menu_about">À propos</string>
+
+    <string name="update_checking">Recherche de mise à jour…</string>
+    <string name="update_available_title">Mise à jour disponible 🎉</string>
+    <string name="update_available_msg">La version %1$s est disponible (tu as la %2$s).\nTélécharger et installer maintenant ?</string>
+    <string name="update_none">Tu as déjà la dernière version (%1$s) ✅</string>
+    <string name="update_error">Impossible de vérifier les mises à jour (connexion ?)</string>
+    <string name="update_download">Télécharger &amp; installer</string>
+    <string name="update_later">Plus tard</string>
+    <string name="update_downloading">Téléchargement de la mise à jour… %1$d%%</string>
+    <string name="update_downloaded">Mise à jour téléchargée.\nLance l\'installation (Android demandera ton autorisation).</string>
+    <string name="update_install">Installer</string>
+    <string name="update_failed">Échec du téléchargement, réessaie plus tard.</string>
+    <string name="update_channel">Mises à jour</string>
+</resources>
