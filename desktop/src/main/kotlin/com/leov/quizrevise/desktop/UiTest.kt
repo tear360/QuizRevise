@@ -54,6 +54,21 @@ object UiTest {
                 """(function(){const n=[...document.querySelectorAll('.card .name')].find(e=>e.textContent.startsWith('UITEST-'));
                     return n? (n.textContent.indexOf('😀')>=0 && n.textContent.indexOf('"v2"')>=0 ? 'FOUND:'+n.textContent : 'BAD_NAME:'+n.textContent) : 'NOT_FOUND'})()""",
                 "paquet UITEST visible, nom préservé (emoji + guillemets)") { it.startsWith("FOUND:") },
+            Step(1450.0,
+                """(function(){try{
+                    const deck=[...document.querySelectorAll('.card')].find(e=>e.querySelector('.name')?.textContent.startsWith('UITEST-'));
+                    if(!deck)return 'NO_DECK';
+                    deck.click();
+                    const add=document.getElementById('fab'), study=document.getElementById('fabStudy');
+                    if(getComputedStyle(add).display==='none'||getComputedStyle(study).display==='none')return 'HIDDEN';
+                    const a=add.getBoundingClientRect(), s=study.getBoundingClientRect();
+                    if(!(s.bottom<=a.top||a.bottom<=s.top))return 'OVERLAP';
+                    add.click();
+                    const opened=document.getElementById('modalBack').style.display!=='none';
+                    if(opened)document.getElementById('dlgCancel').click();
+                    return opened?'ADD_CARD_OK|separated':'ADD_CARD_NO_MODAL';
+                }catch(e){return 'EXC:'+e.message}})()""",
+                "bouton Ajouter une carte visible, séparé de Réviser et fonctionnel") { it.startsWith("ADD_CARD_OK") },
             Step(1600.0, GC_STEP,
                 "pression GC (3 cycles complets)") { it.startsWith("PASS") },
             Step(1950.0,

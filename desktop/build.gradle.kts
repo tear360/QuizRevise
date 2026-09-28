@@ -48,6 +48,7 @@ sourceSets.main {
 }
 tasks.register("generateBuildConfig") {
     val v = (project.findProperty("appVersionName") as String?) ?: "1.1.0"
+    inputs.property("appVersionName", v)
     outputs.dir(genDir)
     doLast {
         val dir = genDir.get().dir("com/leov/quizrevise/desktop").asFile

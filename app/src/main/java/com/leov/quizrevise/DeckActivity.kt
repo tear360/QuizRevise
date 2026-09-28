@@ -12,7 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 
 class DeckActivity : AppCompatActivity() {
 
@@ -36,7 +36,7 @@ class DeckActivity : AppCompatActivity() {
         list.layoutManager = LinearLayoutManager(this)
         list.adapter = adapter
 
-        findViewById<com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton>(R.id.fabStudy).setOnClickListener {
+        findViewById<ExtendedFloatingActionButton>(R.id.fabStudy).setOnClickListener {
             if (db.cards(deckId).size >= 2) {
                 startActivity(Intent(this, StudyActivity::class.java).putExtra("deckId", deckId))
             } else {
@@ -47,11 +47,8 @@ class DeckActivity : AppCompatActivity() {
             }
         }
 
-        // Bouton "Ajouter une carte" dans la toolbar
-        toolbar.inflateMenu(R.menu.menu_deck)
-        toolbar.setOnMenuItemClickListener { item ->
-            if (item.itemId == R.id.action_add_card) { askAddCard(); true } else false
-        }
+        findViewById<ExtendedFloatingActionButton>(R.id.fabAddCard)
+            .setOnClickListener { askAddCard() }
 
         refresh()
     }

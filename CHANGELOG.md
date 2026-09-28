@@ -4,6 +4,14 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.4.6] - 2026-09-29
+
+### Corrections
+- ➕ Le bouton « Ajouter une carte » est de nouveau visible dans l'écran d'un paquet sur Android, y compris lorsque le paquet est vide.
+- 🖥️ Sur desktop, les boutons « Ajouter une carte » et « Réviser » ne se chevauchent plus.
+- 🤖 Le test d'interface vérifie la visibilité du bouton, son espacement et l'ouverture du formulaire.
+- 🛠️ Les builds desktop répercutent correctement le numéro de version demandé.
+
 ## [1.4.5] - 2026-09-27
 
 ### Corrections (desktop)

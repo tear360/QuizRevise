@@ -158,7 +158,8 @@
     z-index: 4;
   }
   .fab:hover { filter: brightness(1.12); }
-  .fab.text { font-size: 16px; font-weight: 700; }
+  /* Laisser le bouton « + » visible sous le bouton Réviser dans l'écran du paquet. */
+  .fab.text { bottom: 100px; font-size: 16px; font-weight: 700; }
 
   .stage { perspective: 1400px; max-width: 640px; margin: 0 auto; }
   .flip {
