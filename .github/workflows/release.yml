@@ -91,7 +91,7 @@ jobs:
           Copy-Item "desktop/build/libs/desktop-${{ env.VERSION }}.jar" "desktop/build/libs/quizrevise.jar"
           $env:PATH = "$PWD/wix314-binaries;$env:PATH"
           & "$env:JAVA_HOME/bin/jpackage.exe" --type exe --name QuizRevise `
-            --app-version "${{ env.VERSION }}" --vendor LeoV `
+            --app-version "${{ env.VERSION }}" --vendor TEAR36 `
             --description "App de révision type Quizlet : flashcards, QCM, stats" `
             --input "desktop/build/libs" --main-jar quizrevise.jar `
             --icon desktop/quizrevise.ico `
@@ -140,7 +140,7 @@ jobs:
       - name: Package .deb (Debian/Ubuntu/Mint)
         run: |
           "$JAVA_HOME/bin/jpackage" --type deb --name quizrevise \
-            --app-version "${{ env.VERSION }}" --vendor LeoV \
+            --app-version "${{ env.VERSION }}" --vendor TEAR36 \
             --description "App de révision type Quizlet : flashcards, QCM, stats" \
             --input desktop/build/libs \
             --main-jar quizrevise.jar --icon desktop/quizrevise.png --dest dist-deb
