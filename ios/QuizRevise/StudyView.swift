@@ -34,7 +34,7 @@ struct StudyView: View {
                     Button("✏️ Réécrire le mot") { start("write") }
                         .buttonStyle(.bordered).controlSize(.large)
                     Spacer()
-                case .flash, .quiz:
+                case .flash, .quiz, .write:
                     ProgressView(value: Double(pos), total: Double(order.count))
                         .padding(.horizontal)
                     Text("\(min(pos + 1, order.count)) / \(order.count)")
