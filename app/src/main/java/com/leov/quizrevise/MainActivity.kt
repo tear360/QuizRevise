@@ -5,7 +5,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,6 +14,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.textfield.TextInputEditText
 
 class MainActivity : AppCompatActivity() {
 
@@ -88,14 +88,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun askNewDeck() {
-        val input = EditText(this).apply {
-            hint = getString(R.string.deck_name_hint)
-            setSingleLine(true)
-            setPadding(56, 40, 56, 8)
-        }
+        // Dialogue Material (TextInputLayout) : l'EditText brut paddé en pixels
+        // collait le texte à la ligne de soulignement.
+        val view = layoutInflater.inflate(R.layout.dialog_deck_name, null)
+        val input = view.findViewById<TextInputEditText>(R.id.deckNameInput)
         AlertDialog.Builder(this)
             .setTitle(R.string.new_deck)
-            .setView(input)
+            .setView(view)
             .setPositiveButton(R.string.create) { _, _ ->
                 val name = input.text.toString().trim()
                 if (name.isNotEmpty()) {
@@ -171,14 +170,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         private fun renameDialog(deck: Deck) {
-            val input = EditText(this@MainActivity).apply {
-                setText(deck.name)
-                setSingleLine(true)
-                setPadding(56, 40, 56, 8)
-            }
+            val view = layoutInflater.inflate(R.layout.dialog_deck_name, null)
+            val input = view.findViewById<TextInputEditText>(R.id.deckNameInput)
+            input.setText(deck.name)
             AlertDialog.Builder(this@MainActivity)
                 .setTitle(R.string.rename)
-                .setView(input)
+                .setView(view)
                 .setPositiveButton(R.string.save) { _, _ ->
                     val name = input.text.toString().trim()
                     if (name.isNotEmpty()) { db.renameDeck(deck.id, name); refresh() }

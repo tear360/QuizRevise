@@ -24,7 +24,7 @@
             android:id="@+id/progressBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:indicatorColor="@color/purple_primary" />
+            app:indicatorColor="@color/purple_accent" />
 
         <TextView
             android:id="@+id/progressText"

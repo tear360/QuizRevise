@@ -4,6 +4,12 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.5.2] - 2026-09-30
+
+### Corrections (Android)
+- 🌙 **Fini le violet foncé illisible sur fond noir** : dans le mode sombre, tous les composants Material (boutons des dialogues, champs de saisie, sélection de texte, barre de progression) passent en violet lumineux à contraste élevé.
+- ✏️ **Champ « nom du paquet » réparé** : création et renommage utilisent un vrai champ Material — le texte ne se mélange plus à la ligne de soulignement.
+
 ## [1.5.1] - 2026-09-30
 
 ### Corrections (Android)

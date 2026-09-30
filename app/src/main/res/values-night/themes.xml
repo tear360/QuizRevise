@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.QuizRevise" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/purple_primary</item>
-        <item name="colorOnPrimary">@color/white</item>
+        <!-- En mode nuit, la couleur primaire des composants Material (boutons de
+             dialogue, champs de saisie, sélections) doit être LUMINEUSE : le violet
+             sombre #4F378B donnait du texte violet illisible sur fond noir. Les
+             toolbars/FAB gardent leur violet sombre via @color/purple_primary. -->
+        <item name="colorPrimary">@color/purple_accent</item>
+        <item name="colorOnPrimary">@color/purple_dark</item>
         <item name="colorPrimaryContainer">@color/purple_container</item>
         <item name="colorOnPrimaryContainer">@color/on_primary_container</item>
         <item name="colorSurface">@color/surface</item>
