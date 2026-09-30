@@ -86,6 +86,10 @@ object UpdateManager {
         }.start()
     }
 
+    /** Emplacement unique de l'APK de mise à jour (repli sur stockage interne si externe indisponible). */
+    private fun updateApkFile(activity: Activity): File =
+        File(activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: activity.filesDir, "quizrevise-update.apk")
+
     private fun findApk(release: JSONObject): String? {
         val assets = release.optJSONArray("assets") ?: return null
         for (i in 0 until assets.length()) {
@@ -127,7 +131,7 @@ object UpdateManager {
         dialog.show()
 
         // Téléchargement via DownloadManager : natif, reprise automatique, filet de sécurité.
-        val dest = File(activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "quizrevise-update.apk")
+        val dest = updateApkFile(activity)
         dest.delete()
         val request = DownloadManager.Request(Uri.parse(release.apkUrl))
             .setTitle("QuizRévise ${release.version}")
@@ -167,6 +171,10 @@ object UpdateManager {
                             DownloadManager.STATUS_FAILED -> {
                                 running = false
                                 finished = true
+                                val reason = try {
+                                    cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
+                                } catch (_: Exception) { 0 }
+                                System.err.println("QuizRevise màj — téléchargement échoué, raison=$reason")
                                 activity.runOnUiThread {
                                     try { dialog.dismiss() } catch (_: Exception) { }
                                     toast(activity, R.string.update_failed)
@@ -191,7 +199,7 @@ object UpdateManager {
 
     /** Lance l'installation de l'APK téléchargé (demande l'autorisation si besoin). */
     fun install(activity: Activity) {
-        val file = File(activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "quizrevise-update.apk")
+        val file = updateApkFile(activity)
         if (!file.exists()) {
             toast(activity, R.string.update_failed)
             return
@@ -257,8 +265,20 @@ object UpdateManager {
             }
             activity.startActivity(intent)
         } catch (e: Exception) {
+            System.err.println("QuizRevise màj — installation impossible : $e")
             toast(activity, R.string.update_failed)
+            // Repli : ne jamais laisser l'utilisateur sans issue de secours.
+            openReleasesPage(activity)
         }
+    }
+
+    private fun openReleasesPage(activity: Activity) {
+        try {
+            activity.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/$REPO/releases/latest"))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (_: Exception) { }
     }
 
     /** Redémarre l'application (après une installation réussie au-dessus du processus vivant). */

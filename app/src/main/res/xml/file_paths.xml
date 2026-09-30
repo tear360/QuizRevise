@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="updates" path="updates/" />
+    <!-- APK de mise à jour téléchargé par DownloadManager dans
+         getExternalFilesDir(DIRECTORY_DOWNLOADS) : sans cette entrée,
+         FileProvider.refusait l'URI et l'installation échouait avec le
+         message trompeur « Échec du téléchargement ».
+    -->
+    <external-files-path name="updates_ext" path="Download/" />
 </paths>

@@ -4,6 +4,12 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.5.3] - 2026-09-30
+
+### Corrections (Android)
+- 🐛 **« Échec du téléchargement » au moment d'installer : corrigé.** Le fichier APK était bien téléchargé, mais le FileProvider refusait de le partager (chemin non déclaré) et l'app affichait un message trompeur au lieu de lancer l'installateur. Le chemin est maintenant déclaré et l'écran d'installation s'ouvre.
+- 🛟 En cas d'échec résiduel de l'installation, l'application ouvre directement la page GitHub des releases au lieu de laisser un message sans issue.
+
 ## [1.5.2] - 2026-09-30
 
 ### Corrections (Android)
