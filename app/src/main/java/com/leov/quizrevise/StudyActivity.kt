@@ -140,7 +140,7 @@ class StudyActivity : AppCompatActivity() {
                 btn.text = options[i]
                 btn.isEnabled = true
                 btn.backgroundTintList = ColorStateList.valueOf(
-                    ContextCompat.getColor(this, com.google.android.material.R.color.material_dynamic_primary60)
+                    ContextCompat.getColor(this, R.color.quiz_option_bg)
                 )
                 btn.setTextColor(ContextCompat.getColor(this, android.R.color.white))
             } else {
@@ -196,7 +196,7 @@ class StudyActivity : AppCompatActivity() {
             btn.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.correct))
             answer(true)
         } else {
-            btn.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.wrong))
+            btn.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.wrong_button))
             answerButtons.filter { it.text.toString() == currentAnswer }.forEach {
                 it.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.correct))
             }

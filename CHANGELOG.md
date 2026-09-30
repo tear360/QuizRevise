@@ -4,6 +4,13 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.5.0] - 2026-09-30
+
+### Ajouts
+- 🌗 Thèmes clair, sombre et automatique selon les préférences de l'appareil, sur Android, iOS et desktop.
+- ⚙️ Nouvel espace Paramètres accessible par l'engrenage sur mobile et ordinateur, regroupant l'apparence, l'import/export, les statistiques, les mises à jour et les informations de l'application.
+- ♿ Palette sombre à contraste renforcé : surfaces sombres, texte clair et boutons/accents visibles.
+
 ## [1.4.6] - 2026-09-29
 
 ### Corrections

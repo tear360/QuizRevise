@@ -5,6 +5,7 @@
 <style>
   :root {
     --primary: #6750A4;
+    --accent: #6750A4;
     --primary-dark: #381E72;
     --primary-container: #EADDFF;
     --bg: #FAF8FF;
@@ -14,7 +15,72 @@
     --outline: #79747E;
     --correct: #1B873B;
     --wrong: #B3261E;
+    --danger-bg: #FBE9E7;
+    --danger-text: #B3261E;
+    --input-bg: #FFFFFF;
+    color-scheme: light;
   }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) {
+      color-scheme: dark;
+      --primary: #D0BCFF;
+      --accent: #D0BCFF;
+      --primary-dark: #EADDFF;
+      --primary-container: #4A4458;
+      --bg: #121116;
+      --surface: #1E1B22;
+      --on-surface: #F4EFF4;
+      --on-variant: #CAC4D0;
+      --outline: #938F99;
+      --correct: #1F7A3E;
+      --wrong: #B3261E;
+      --danger-bg: #601410;
+      --danger-text: #FFB4AB;
+      --input-bg: #2B2930;
+    }
+    :root:not([data-theme="light"]):not([data-theme="dark"]) header { background: #1C1B1F; color: #F4EFF4; }
+    :root:not([data-theme="light"]):not([data-theme="dark"]) .pill:not(.tonal):not(.danger):not(.correct):not(.wrong),
+    :root:not([data-theme="light"]):not([data-theme="dark"]) .fab { background: #D0BCFF; color: #381E72; }
+    :root:not([data-theme="light"]):not([data-theme="dark"]) #errBanner.notice { background: #4A4458; color: #F4EFF4; }
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --primary: #6750A4;
+    --accent: #6750A4;
+    --primary-dark: #381E72;
+    --primary-container: #EADDFF;
+    --bg: #FAF8FF;
+    --surface: #FFFFFF;
+    --on-surface: #1D1B20;
+    --on-variant: #49454F;
+    --outline: #79747E;
+    --correct: #1B873B;
+    --wrong: #B3261E;
+    --danger-bg: #FBE9E7;
+    --danger-text: #B3261E;
+    --input-bg: #FFFFFF;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --primary: #D0BCFF;
+    --accent: #D0BCFF;
+    --primary-dark: #EADDFF;
+    --primary-container: #4A4458;
+    --bg: #121116;
+    --surface: #1E1B22;
+    --on-surface: #F4EFF4;
+    --on-variant: #CAC4D0;
+    --outline: #938F99;
+    --correct: #1F7A3E;
+    --wrong: #B3261E;
+    --danger-bg: #601410;
+    --danger-text: #FFB4AB;
+    --input-bg: #2B2930;
+  }
+  html[data-theme="dark"] header { background: #1C1B1F; color: #F4EFF4; }
+  html[data-theme="dark"] .pill:not(.tonal):not(.danger):not(.correct):not(.wrong),
+  html[data-theme="dark"] .fab { background: #D0BCFF; color: #381E72; }
+  html[data-theme="dark"] #errBanner.notice { background: #4A4458; color: #F4EFF4; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body {
@@ -82,7 +148,7 @@
   }
   #errBanner button { float: right; background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; }
   #errBanner.notice { background: var(--primary); }
-  .form-err { color: var(--wrong); font-size: 13px; margin-top: 10px; min-height: 16px; font-weight: 600; }
+  .form-err { color: var(--danger-text); font-size: 13px; margin-top: 10px; min-height: 16px; font-weight: 600; }
 
   main { flex: 1; overflow-y: auto; padding: 20px 24px 120px; }
   .empty {
@@ -116,9 +182,10 @@
   .card .info { flex: 1; min-width: 0; }
   .card .name { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
   .card .sub { font-size: 13px; color: var(--on-variant); margin-top: 2px; overflow-wrap: anywhere; }
-  .card .actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .card .actions { display: flex; gap: 8px; flex-shrink: 0;  }
 
   .pill {
+
     border: none;
     border-radius: 999px;
     padding: 10px 20px;
@@ -134,7 +201,7 @@
   .pill:active { filter: brightness(.92); }
   .pill:disabled { opacity: .55; cursor: default; }
   .pill.tonal { background: var(--primary-container); color: var(--primary-dark); }
-  .pill.danger { background: #FBE9E7; color: var(--wrong); }
+  .pill.danger { background: var(--danger-bg); color: var(--danger-text); }
   .pill.correct { background: var(--correct); color: #fff; }
   .pill.wrong { background: var(--wrong); color: #fff; }
   .pill.big { font-size: 16px; padding: 14px 30px; }
@@ -188,7 +255,7 @@
   .face.back { transform: rotateY(180deg); }
   .face .side {
     font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
-    color: var(--primary); text-transform: uppercase;
+    color: var(--accent); text-transform: uppercase;
   }
   .face .txt { font-size: 27px; font-weight: 700; margin-top: 22px; line-height: 1.35; overflow-wrap: anywhere; }
   .face .hint { font-size: 13px; color: var(--outline); margin-top: 26px; }
@@ -206,7 +273,7 @@
   .mode-choice { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 15vh; }
   .mode-choice h2 { font-size: 22px; margin-bottom: 8px; }
   .mode-choice .pill { min-width: 250px; }
-  .result-score { font-size: 30px; font-weight: 800; color: var(--primary); }
+  .result-score { font-size: 30px; font-weight: 800; color: var(--accent); }
 
   .progress-row { max-width: 640px; margin: 0 auto 20px; text-align: center; color: var(--on-variant); font-size: 13px; }
   .progress-bar { height: 7px; border-radius: 4px; background: var(--primary-container); overflow: hidden; margin-top: 8px; }
@@ -238,18 +305,33 @@
     border-radius: 11px;
     font-size: 15px;
     font-family: inherit;
-    background: #fff;
+    background: var(--input-bg);
     color: var(--on-surface);
   }
   .modal input:focus { outline: none; border-color: var(--primary); }
   .modal .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+  #settingsBack { overflow-y: auto; padding: 18px 0; }
+  #settingsBack .modal { max-height: 92vh; overflow-y: auto; }
+  .settings-section { margin: 18px 0 6px; color: var(--accent); font-size: 13px; font-weight: 700; }
+  .settings-description { color: var(--on-variant); font-size: 13px; margin-bottom: 6px; }
+  .settings-select {
+    width: 100%; padding: 11px 13px; border: 1.5px solid var(--outline);
+    border-radius: 11px; font-size: 15px; font-family: inherit;
+    background: var(--input-bg); color: var(--on-surface);
+  }
+  .settings-action {
+    display: block; width: 100%; margin-top: 6px; text-align: left;
+    border: 1px solid var(--outline); background: var(--surface); color: var(--on-surface);
+    border-radius: 11px; padding: 12px 14px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .settings-action:hover { background: var(--primary-container); color: var(--primary-dark); }
 
   .stats-grid { max-width: 460px; margin: 6vh auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .stat {
     background: var(--surface); border-radius: 16px; padding: 22px;
     text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.09);
   }
-  .stat .v { font-size: 27px; font-weight: 800; color: var(--primary); }
+  .stat .v { font-size: 27px; font-weight: 800; color: var(--accent); }
   .stat .l { font-size: 13px; color: var(--on-variant); margin-top: 5px; }
   .center-title { text-align: center; font-size: 20px; margin-top: 30px; }
 </style>
@@ -259,18 +341,31 @@
   <header id="hdr">
     <button class="icon-btn" id="btnBack" title="Retour"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
     <h1 id="title">Mes paquets</h1>
-    <button class="hdr-pill" id="btnImport" style="display:none"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>Importer</button>
-    <button class="hdr-pill" id="btnExportAll" style="display:none"><svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>Exporter tout</button>
-    <button class="icon-btn" id="btnStats" title="Statistiques">
-      <svg viewBox="0 0 24 24"><path d="M5 21V9h4v12H5zm5 0V3h4v18h-4zm5 0v-8h4v8h-4z"/></svg>
-    </button>
-    <button class="icon-btn" id="btnRefresh" title="Rechercher les mises à jour">
-      <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-    </button>
-    <button class="icon-btn" id="btnAbout" title="À propos">
-      <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+    <button class="icon-btn" id="btnSettings" title="Paramètres" aria-label="Paramètres">
+      <svg viewBox="0 0 24 24"><path d="M19.14 12.94a7.5 7.5 0 0 0 .06-.94c0-.32-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.62l-1.92-3.32a.5.5 0 0 0-.59-.21l-2.39.96a7.3 7.3 0 0 0-1.62-.93l-.36-2.54a.5.5 0 0 0-.48-.41h-3.84a.5.5 0 0 0-.48.41L9.23 5.35c-.59.24-1.13.55-1.62.93l-2.39-.96a.5.5 0 0 0-.59.21L2.71 8.85a.5.5 0 0 0 .12.62l2.03 1.58a6.6 6.6 0 0 0 0 1.9l-2.03 1.58a.5.5 0 0 0-.12.62l1.92 3.32a.5.5 0 0 0 .59.21l2.39-.96c.49.38 1.03.69 1.62.93l.36 2.54a.5.5 0 0 0 .48.41h3.84a.5.5 0 0 0 .48-.41l.36-2.54a7.3 7.3 0 0 0 1.62-.93l2.39.96a.5.5 0 0 0 .59-.21l1.92-3.32a.5.5 0 0 0-.12-.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
     </button>
   </header>
+
+  <div class="modal-back" id="settingsBack" style="display:none" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal">
+      <h2 id="settingsTitle">Paramètres</h2>
+      <div class="settings-section">Apparence</div>
+      <div class="settings-description">Le mode automatique suit le thème du système.</div>
+      <select class="settings-select" id="themeChoice" aria-label="Thème de l'application">
+        <option value="system">Suivre l'appareil</option>
+        <option value="light">Clair</option>
+        <option value="dark">Sombre</option>
+      </select>
+      <div class="settings-section">Données</div>
+      <button class="settings-action" id="btnImport">Importer un paquet (.qrevise)</button>
+      <button class="settings-action" id="btnExportAll">Exporter tous mes paquets</button>
+      <button class="settings-action" id="btnStats">Statistiques</button>
+      <div class="settings-section">Application</div>
+      <button class="settings-action" id="btnRefresh">Rechercher les mises à jour</button>
+      <button class="settings-action" id="btnAbout">À propos</button>
+      <div class="row"><button class="pill" id="closeSettings">Fermer</button></div>
+    </div>
+  </div>
 
   <main id="main"><div class="loading">Chargement…</div></main>
   <button class="fab" id="fab" style="display:none">+</button>
@@ -365,12 +460,6 @@ function render() {
 function renderInner() {
   hideFab();
   document.getElementById('btnBack').style.display = screen === 'decks' ? 'none' : '';
-  const deckScreens = screen === 'decks' || screen === 'deck';
-  document.getElementById('btnImport').style.display = deckScreens ? '' : 'none';
-  document.getElementById('btnExportAll').style.display = screen === 'decks' ? '' : 'none';
-  document.getElementById('btnStats').style.display = deckScreens ? '' : 'none';
-  document.getElementById('btnRefresh').style.display = deckScreens ? '' : 'none';
-  document.getElementById('btnAbout').style.display = deckScreens ? '' : 'none';
 
   if (screen === 'decks') { document.getElementById('title').textContent = 'Mes paquets'; renderDecks(); }
   else if (screen === 'deck') { document.getElementById('title').textContent = currentDeck.name; renderDeck(); }
@@ -589,6 +678,26 @@ function renderStats() {
     '</div>';
 }
 
+function settingsThemeKey() { return 'quizrevise.theme'; }
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme === 'system' ? 'system' : theme;
+  if (theme === 'system') document.documentElement.removeAttribute('data-theme');
+  const choice = document.getElementById('themeChoice');
+  if (choice) choice.value = theme;
+}
+function loadTheme() {
+  let theme = 'system';
+  try { theme = localStorage.getItem(settingsThemeKey()) || 'system'; } catch (_) { }
+  applyTheme(theme);
+}
+function openSettings() {
+  loadTheme();
+  document.getElementById('settingsBack').style.display = 'flex';
+}
+function closeSettings() {
+  document.getElementById('settingsBack').style.display = 'none';
+}
+
 function showAbout() {
   alert('QuizRévise ' + N.version() + '\n\nAlternative libre à Quizlet : flashcards, QCM et statistiques.\nFonctionne hors-ligne, données stockées en local.\n\nMises à jour : https://github.com/tear360/QuizRevise/releases/latest');
 }
@@ -755,18 +864,31 @@ function hideFab() {
 }
 
 // ============ ÉVÉNEMENTS GLOBAUX ============
+loadTheme();
+document.getElementById('btnSettings').addEventListener('click', openSettings);
+document.getElementById('closeSettings').addEventListener('click', closeSettings);
+document.getElementById('settingsBack').addEventListener('click', function (e) {
+  if (e.target === this) closeSettings();
+});
+document.getElementById('themeChoice').addEventListener('change', function () {
+  const theme = this.value;
+  try { localStorage.setItem(settingsThemeKey(), theme); } catch (_) { }
+  applyTheme(theme);
+});
 document.getElementById('btnBack').addEventListener('click', function () {
   if (screen === 'study') { if (confirm('Quitter la session en cours ?')) go('deck'); }
   else if (screen === 'deck') go('decks');
   else go('decks');
 });
-document.getElementById('btnStats').addEventListener('click', function () { go('stats'); });
-document.getElementById('btnRefresh').addEventListener('click', function () { checkUpdates(true); });
-document.getElementById('btnAbout').addEventListener('click', showAbout);
-document.getElementById('btnImport').addEventListener('click', doImport);
-document.getElementById('btnExportAll').addEventListener('click', function () { doExport(0, 'mes-paquets'); });
+document.getElementById('btnStats').addEventListener('click', function () { closeSettings(); go('stats'); });
+document.getElementById('btnRefresh').addEventListener('click', function () { closeSettings(); checkUpdates(true); });
+document.getElementById('btnAbout').addEventListener('click', function () { closeSettings(); showAbout(); });
+document.getElementById('btnImport').addEventListener('click', function () { closeSettings(); doImport(); });
+document.getElementById('btnExportAll').addEventListener('click', function () { closeSettings(); doExport(0, 'mes-paquets'); });
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
+    const settings = document.getElementById('settingsBack');
+    if (settings.style.display !== 'none') closeSettings();
     const back = document.getElementById('modalBack');
     if (back.style.display !== 'none') { back.style.display = 'none'; }
   }

@@ -40,7 +40,7 @@ struct StudyView: View {
                     Spacer()
                     Text("Session terminée !").font(.title2).bold()
                     Text("Score : \(correct) / \(order.count) (\(correct * 100 / max(order.count, 1))%)")
-                        .font(.title3).foregroundColor(.purple).bold()
+                        .font(.title3).foregroundColor(.accentColor).bold()
                     Button("Recommencer") { start(currentMode) }
                         .buttonStyle(.borderedProminent)
                     Button("Fermer") { presentation.wrappedValue.dismiss() }
@@ -63,7 +63,7 @@ struct StudyView: View {
     private var flashCard: some View {
         VStack(spacing: 24) {
             Text(revealed ? "RÉPONSE" : "QUESTION")
-                .font(.caption).bold().foregroundColor(.purple)
+                .font(.caption).bold().foregroundColor(.accentColor)
             Text(revealed ? currentCard.answer : currentCard.question)
                 .font(.title2).bold().multilineTextAlignment(.center)
             if !revealed {
@@ -120,10 +120,10 @@ struct StudyView: View {
     }
 
     private func optionColor(_ option: String) -> Color {
-        guard let sel = selectedOption else { return .purple }
+        guard let sel = selectedOption else { return .accentColor }
         if option == sel { return option == currentCard.answer ? .green : .red }
         if option == currentCard.answer { return .green }
-        return .purple
+        return .accentColor
     }
 
     private func start(_ mode: String) {

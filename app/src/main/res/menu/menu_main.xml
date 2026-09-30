@@ -3,27 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_import"
-        android:title="Importer un paquet (.qrevise)"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_export_all"
-        android:title="Exporter tous mes paquets"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_stats"
-        android:title="@string/menu_stats"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_check_updates"
-        android:title="@string/menu_check_updates"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_about"
-        android:title="@string/menu_about"
-        app:showAsAction="never" />
+        android:id="@+id/action_settings"
+        android:icon="@drawable/ic_settings_24"
+        android:title="@string/settings_title"
+        app:showAsAction="always" />
 </menu>

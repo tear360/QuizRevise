@@ -46,7 +46,9 @@
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
                 android:text="@string/rename"
-                android:textSize="12sp" />
+                android:textColor="@color/purple_accent"
+                android:textSize="12sp"
+                app:strokeColor="@color/purple_accent" />
 
             <Button
                 android:id="@+id/btnDelete"
@@ -57,7 +59,8 @@
                 android:minWidth="0dp"
                 android:text="@string/delete"
                 android:textColor="@color/wrong"
-                android:textSize="12sp" />
+                android:textSize="12sp"
+                app:strokeColor="@color/wrong" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

@@ -65,7 +65,7 @@
                         android:layout_height="wrap_content"
                         android:text="@string/question_hint"
                         android:textAllCaps="true"
-                        android:textColor="@color/purple_primary"
+                        android:textColor="@color/purple_accent"
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
@@ -106,7 +106,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:backgroundTint="@color/wrong"
+                android:backgroundTint="@color/wrong_button"
                 android:text="@string/i_didnt"
                 android:textColor="@color/white" />
 
@@ -178,7 +178,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:textColor="@color/purple_primary"
+                android:textColor="@color/purple_accent"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
@@ -195,7 +195,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/back_to_deck" />
+                android:text="@string/back_to_deck"
+                android:textColor="@color/purple_accent"
+                app:strokeColor="@color/purple_accent" />
         </LinearLayout>
     </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -46,6 +46,20 @@
     <string name="menu_stats">Statistiques</string>
     <string name="menu_check_updates">Rechercher les mises à jour</string>
     <string name="menu_about">À propos</string>
+    <string name="settings_title">Paramètres</string>
+    <string name="appearance_section">Apparence</string>
+    <string name="theme_preference">Thème de l\'application</string>
+    <string name="theme_system">Suivre l\'appareil</string>
+    <string name="theme_light">Clair</string>
+    <string name="theme_dark">Sombre</string>
+    <string name="data_section">Données</string>
+    <string name="import_decks">Importer un paquet (.qrevise)</string>
+    <string name="export_decks">Exporter tous mes paquets</string>
+    <string name="support_section">Application</string>
+    <string name="check_updates">Rechercher les mises à jour</string>
+    <string name="app_about">À propos</string>
+    <string name="settings_close">Fermer</string>
+    <string name="settings_theme_summary">Choisis l\'apparence de QuizRévise</string>
 
     <string name="update_checking">Recherche de mise à jour…</string>
     <string name="update_available_title">Mise à jour disponible 🎉</string>

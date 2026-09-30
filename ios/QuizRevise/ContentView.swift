@@ -6,6 +6,8 @@ struct ContentView: View {
     @StateObject private var store = Store()
     @State private var showNewDeck = false
     @State private var showStats = false
+    @State private var showSettings = false
+    @AppStorage("appTheme") private var appTheme = "system"
     @State private var newDeckName = ""
     @State private var deckToRename: Deck?
     @State private var renameText = ""
@@ -47,7 +49,7 @@ struct ContentView: View {
                                 }
                                 Button("Exporter (.qrevise)") {
                                     if let json = store.exportJson(deckID: deck.id),
-                                       let url = Self.writeTemp(json, name: "\\(deck.name).qrevise".replacingOccurrences(of: "/", with: "-")) {
+                                       let url = Self.writeTemp(json, name: "\(deck.name).qrevise".replacingOccurrences(of: "/", with: "-")) {
                                         shareItems = [url]
                                         showShare = true
                                     }
@@ -55,33 +57,15 @@ struct ContentView: View {
                                 Button("Supprimer", role: .destructive) { store.deleteDeck(deck) }
                             }
                         }
-                        .onDelete { offsets in
-                            store.decks.remove(atOffsets: offsets)
-                        }
+                        .onDelete { offsets in store.decks.remove(atOffsets: offsets) }
                     }
                 }
             }
             .navigationTitle("Mes paquets")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button("Importer un paquet (.qrevise)") { showImporter = true }
-                        Button("Exporter tous mes paquets") {
-                            if let json = store.exportJson(),
-                               let url = Self.writeTemp(json, name: "mes-paquets.qrevise") {
-                                shareItems = [url]
-                                showShare = true
-                            }
-                        }
-                        Button("Statistiques") { showStats = true }
-                        Button("Rechercher les mises à jour") { checkUpdates() }
-                        Button("À propos") {
-                            let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
-                            updateMessage = "QuizRévise \(v)\n\nAlternative libre à Quizlet : flashcards, QCM, stats.\nMises à jour : github.com/\(GitHubUpdater.repo)/releases"
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                    }
+                    Button { showSettings = true } label: { Image(systemName: "gearshape") }
+                        .accessibilityLabel("Paramètres")
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button { newDeckName = ""; showNewDeck = true } label: { Image(systemName: "plus") }
@@ -122,9 +106,39 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $showStats) { StatsSheet(store: store) }
-            .sheet(isPresented: $showShare) {
-                ShareSheet(items: shareItems)
+            .sheet(isPresented: $showSettings) {
+                SettingsSheet(
+                    theme: $appTheme,
+                    onImport: {
+                        showSettings = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showImporter = true }
+                    },
+                    onExport: {
+                        showSettings = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            if let json = store.exportJson(),
+                               let url = Self.writeTemp(json, name: "mes-paquets.qrevise") {
+                                shareItems = [url]
+                                showShare = true
+                            }
+                        }
+                    },
+                    onStats: {
+                        showSettings = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showStats = true }
+                    },
+                    onCheckUpdates: {
+                        showSettings = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { checkUpdates() }
+                    },
+                    onAbout: {
+                        showSettings = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showAbout() }
+                    },
+                    onClose: { showSettings = false }
+                )
             }
+            .sheet(isPresented: $showShare) { ShareSheet(items: shareItems) }
             .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json, .data]) { result in
                 guard case .success(let url) = result else { return }
                 let secured = url.startAccessingSecurityScopedResource()
@@ -144,11 +158,17 @@ struct ContentView: View {
             .alert("Mise à jour disponible",
                    isPresented: Binding(get: { releasePage != nil },
                                         set: { if !$0 { releasePage = nil } })) {
-                Button("Ouvrir la page") { if let u = releasePage { UIApplication.shared.open(u) } }
+                Button("Ouvrir la page") { if let url = releasePage { UIApplication.shared.open(url) } }
                 Button("Plus tard", role: .cancel) { }
             } message: { Text(updateMessage ?? "") }
         }
+        .preferredColorScheme(appTheme == "light" ? .light : appTheme == "dark" ? .dark : nil)
         .onAppear { checkUpdates(silent: true) }
+    }
+
+    private func showAbout() {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        updateMessage = "QuizRévise \(version)\n\nAlternative libre à Quizlet : flashcards, QCM et statistiques.\nMises à jour : github.com/\(GitHubUpdater.repo)/releases"
     }
 
     private func checkUpdates(silent: Bool = false) {
@@ -166,6 +186,42 @@ struct ContentView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+private struct SettingsSheet: View {
+    @Binding var theme: String
+    let onImport: () -> Void
+    let onExport: () -> Void
+    let onStats: () -> Void
+    let onCheckUpdates: () -> Void
+    let onAbout: () -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("Apparence") {
+                    Picker("Thème", selection: $theme) {
+                        Text("Suivre l’appareil").tag("system")
+                        Text("Clair").tag("light")
+                        Text("Sombre").tag("dark")
+                    }
+                    .pickerStyle(.inline)
+                }
+                Section("Données") {
+                    Button("Importer un paquet (.qrevise)", action: onImport)
+                    Button("Exporter tous mes paquets", action: onExport)
+                    Button("Statistiques", action: onStats)
+                }
+                Section("Application") {
+                    Button("Rechercher les mises à jour", action: onCheckUpdates)
+                    Button("À propos", action: onAbout)
+                }
+            }
+            .navigationTitle("Paramètres")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fermer", action: onClose) } }
         }
     }
 }

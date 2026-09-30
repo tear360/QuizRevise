@@ -1,6 +1,5 @@
 package com.leov.quizrevise
 
-import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -12,6 +11,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -22,34 +22,30 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: DecksAdapter
     private var exportDeckId: Long = 0
 
-    private val exportLauncher =
-        registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri: Uri? ->
-            if (uri != null) {
-                val json = if (exportDeckId > 0) Transfer.exportDeckJson(db, exportDeckId)
-                           else Transfer.exportAllJson(db)
-                try {
-                    contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray(Charsets.UTF_8)) }
-                    toast("Paquet exporté ✅")
-                } catch (e: Exception) { toast("Échec de l'export") }
+    private val exportLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val json = if (exportDeckId > 0) Transfer.exportDeckJson(db, exportDeckId)
+            else Transfer.exportAllJson(db)
+            try {
+                contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+                toast("Paquet exporté ✅")
+            } catch (_: Exception) {
+                toast("Échec de l'export")
             }
         }
-
-    private val importLauncher =
-        registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris: List<Uri> ->
-            var total = 0
-            for (uri in uris) {
-                try {
-                    val json = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
-                    total += Transfer.importJson(db, json)
-                } catch (_: Exception) { }
-            }
-            refresh()
-            toast(if (total > 0) "✅ $total paquet(s) importé(s)" else "Aucun paquet importé (fichier invalide ?)")
-        }
+    }
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val mode = when (getSharedPreferences("settings", MODE_PRIVATE).getString("theme", "system")) {
+            "light" -> AppCompatDelegate.MODE_NIGHT_NO
+            "dark" -> AppCompatDelegate.MODE_NIGHT_YES
+            else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        }
+        AppCompatDelegate.setDefaultNightMode(mode)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -64,18 +60,10 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
             .setOnMenuItemClickListener { item ->
-                when (item.itemId) {
-                    R.id.action_import -> { importDecks(); true }
-                    R.id.action_export_all -> { exportAll(); true }
-                    R.id.action_stats -> { showStats(); true }
-                    R.id.action_check_updates -> {
-                        toast(R.string.update_checking)
-                        UpdateManager.check(this, silent = false)
-                        true
-                    }
-                    R.id.action_about -> { showAbout(); true }
-                    else -> false
-                }
+                if (item.itemId == R.id.action_settings) {
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                    true
+                } else false
             }
 
         // Vérification discrète des mises à jour à l'ouverture (1 fois par lancement)
@@ -141,9 +129,6 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(android.R.string.ok, null)
             .show()
     }
-
-    private fun toast(resId: Int) =
-        android.widget.Toast.makeText(this, resId, android.widget.Toast.LENGTH_SHORT).show()
 
     private inner class DecksAdapter : RecyclerView.Adapter<DecksVH>() {
         private val items = mutableListOf<Deck>()
@@ -211,15 +196,6 @@ class MainActivity : AppCompatActivity() {
     private fun exportDeck(deck: Deck) {
         exportDeckId = deck.id
         exportLauncher.launch(deck.name.replace(Regex("[\\\\/:*?\"<>|]"), "_"))
-    }
-
-    private fun exportAll() {
-        exportDeckId = 0
-        exportLauncher.launch("mes-paquets")
-    }
-
-    private fun importDecks() {
-        importLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/plain"))
     }
 
 }

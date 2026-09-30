@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="purple_primary">#6750A4</color>
+    <color name="purple_accent">#6750A4</color>
+    <color name="quiz_option_bg">#6750A4</color>
     <color name="purple_dark">#381E72</color>
     <color name="purple_container">#EADDFF</color>
+    <color name="on_primary_container">#381E72</color>
     <color name="background">#FAF8FF</color>
     <color name="surface">#FFFFFF</color>
     <color name="on_surface">#1D1B20</color>
@@ -10,6 +13,7 @@
     <color name="outline">#79747E</color>
     <color name="correct">#1B873B</color>
     <color name="wrong">#B3261E</color>
+    <color name="wrong_button">#B3261E</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
 </resources>
