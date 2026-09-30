@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.widget.Button
@@ -19,6 +20,7 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.progressindicator.LinearProgressIndicator
+import com.google.android.material.textfield.TextInputEditText
 
 class StudyActivity : AppCompatActivity() {
 
@@ -43,6 +45,9 @@ class StudyActivity : AppCompatActivity() {
     private lateinit var tapHint: TextView
     private lateinit var flashButtons: LinearLayout
     private lateinit var quizButtons: LinearLayout
+    private lateinit var writeButtons: LinearLayout
+    private lateinit var writeInput: TextInputEditText
+    private lateinit var writeFeedback: TextView
     private lateinit var answerButtons: List<Button>
     private lateinit var resultView: LinearLayout
     private lateinit var resultScore: TextView
@@ -68,6 +73,9 @@ class StudyActivity : AppCompatActivity() {
         tapHint = findViewById(R.id.tapHint)
         flashButtons = findViewById(R.id.flashButtons)
         quizButtons = findViewById(R.id.quizButtons)
+        writeButtons = findViewById(R.id.writeButtons)
+        writeInput = findViewById(R.id.writeInput)
+        writeFeedback = findViewById(R.id.writeFeedback)
         answerButtons = listOf(findViewById(R.id.answer0), findViewById(R.id.answer1), findViewById(R.id.answer2), findViewById(R.id.answer3))
         resultView = findViewById(R.id.resultView)
         resultScore = findViewById(R.id.resultScore)
@@ -77,6 +85,10 @@ class StudyActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnAgain).setOnClickListener { startSession(mode) }
         findViewById<Button>(R.id.btnBackToDeck).setOnClickListener { finish() }
         answerButtons.forEach { btn -> btn.setOnClickListener { onQuizAnswer(btn) } }
+        findViewById<Button>(R.id.btnValidate).setOnClickListener { checkWritten() }
+        writeInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) { checkWritten(); true } else false
+        }
         cardContainer.setOnClickListener { if (mode == "flash") flipCard() }
         // Perspective plus prononcée pour l'animation de retournement
         cardContainer.cameraDistance = 8000f * resources.displayMetrics.density
@@ -87,8 +99,12 @@ class StudyActivity : AppCompatActivity() {
     private fun chooseMode() {
         AlertDialog.Builder(this)
             .setTitle(R.string.study)
-            .setItems(arrayOf(getString(R.string.flashcards), getString(R.string.quiz))) { _, which ->
-                startSession(if (which == 0) "flash" else "quiz")
+            .setItems(arrayOf(getString(R.string.flashcards), getString(R.string.quiz), getString(R.string.rewrite))) { _, which ->
+                startSession(when (which) {
+                    0 -> "flash"
+                    1 -> "quiz"
+                    else -> "write"
+                })
             }
             .setCancelable(false)
             .show()
@@ -106,6 +122,17 @@ class StudyActivity : AppCompatActivity() {
         showQuestion()
     }
 
+    /**
+     * Comparaison tolérante pour le mode « Réécrire le mot » : casse, accents,
+     * ponctuation et espaces multiples ignorés — on juge le mot, pas la frappe.
+     */
+    private fun normalized(s: String): String = s.trim()
+        .replace(Regex("[\\p{Punct}\\p{Space}]+"), " ")
+        .replace(Regex("[àâä]"), "a").replace(Regex("[éèêë]"), "e")
+        .replace(Regex("[îï]"), "i").replace(Regex("[ôö]"), "o")
+        .replace(Regex("[ùûü]"), "u").replace("ç", "c").replace("œ", "oe")
+        .lowercase()
+
     private fun showQuestion() {
         val card = deckCards[order[pos]]
         currentAnswer = card.answer
@@ -118,11 +145,21 @@ class StudyActivity : AppCompatActivity() {
         progressBar.setProgressCompat(pos, true)
         setSide(false)
 
-        if (mode == "quiz") {
-            quizButtons.visibility = View.VISIBLE
-            setupQuizOptions()
-        } else {
-            quizButtons.visibility = View.GONE
+        flashButtons.visibility = View.GONE
+        writeButtons.visibility = View.GONE
+        writeInput.setText("")
+        writeFeedback.visibility = View.GONE
+
+        when (mode) {
+            "quiz" -> {
+                quizButtons.visibility = View.VISIBLE
+                setupQuizOptions()
+            }
+            "write" -> {
+                writeButtons.visibility = View.VISIBLE
+                writeInput.requestFocus()
+            }
+            else -> { /* flash : les boutons apparaissent après retournement */ }
         }
     }
 
@@ -187,8 +224,32 @@ class StudyActivity : AppCompatActivity() {
             cardSideLabel.text = getString(R.string.question_hint)
             cardText.text = deckCards[order[pos]].question
             tapHint.visibility = if (mode == "flash" && !everRevealed) View.VISIBLE else View.GONE
-            if (!everRevealed) flashButtons.visibility = View.GONE
+            if (!everRevealed) {
+                flashButtons.visibility = View.GONE
+                tapHint.text = getString(R.string.fold_hint)
+            }
         }
+    }
+
+    private fun checkWritten() {
+        if (mode != "write" || writeFeedback.visibility == View.VISIBLE) return
+        val given = writeInput.text?.toString()?.trim().orEmpty()
+        if (given.isEmpty()) return
+        val ok = normalized(given) == normalized(currentAnswer)
+        if (ok) correctCount++
+        writeFeedback.text = if (ok) getString(R.string.correct)
+        else getString(R.string.wrong) + " → " + currentAnswer
+        writeFeedback.setTextColor(ContextCompat.getColor(this, if (ok) R.color.correct else R.color.wrong))
+        writeFeedback.visibility = View.VISIBLE
+        writeInput.isEnabled = false
+        findViewById<Button>(R.id.btnValidate).isEnabled = false
+        pos++
+        progressBar.setProgressCompat(pos, true)
+        handler.postDelayed({
+            writeInput.isEnabled = true
+            findViewById<Button>(R.id.btnValidate).isEnabled = true
+            if (pos >= order.size) finishSession() else showQuestion()
+        }, 1200)
     }
 
     private fun onQuizAnswer(btn: Button) {
@@ -219,6 +280,7 @@ class StudyActivity : AppCompatActivity() {
         studyArea.visibility = View.GONE
         flashButtons.visibility = View.GONE
         quizButtons.visibility = View.GONE
+        writeButtons.visibility = View.GONE
         resultView.visibility = View.VISIBLE
         val pct = correctCount * 100 / order.size
         resultScore.text = getString(R.string.score_label, correctCount, order.size, pct)

@@ -106,6 +106,18 @@ class DeckActivity : AppCompatActivity() {
             val card = items[position]
             holder.question.text = card.question
             holder.answer.text = card.answer
+            // Carte pliée par défaut : un appui déplie (réponse + actions).
+            holder.answer.visibility = View.GONE
+            holder.actions.visibility = View.GONE
+            holder.arrow.text = "▸"
+            val toggle = View.OnClickListener {
+                val expanded = holder.answer.visibility == View.VISIBLE
+                holder.answer.visibility = if (expanded) View.GONE else View.VISIBLE
+                holder.actions.visibility = if (expanded) View.GONE else View.VISIBLE
+                holder.arrow.text = if (expanded) "▸" else "▾"
+            }
+            holder.body.setOnClickListener(toggle)
+            holder.arrow.setOnClickListener(toggle)
             holder.edit.setOnClickListener { askAddCard(card) }
             holder.delete.setOnClickListener {
                 AlertDialog.Builder(this@DeckActivity)
@@ -120,8 +132,11 @@ class DeckActivity : AppCompatActivity() {
 }
 
 private class CardsVH(view: View) : RecyclerView.ViewHolder(view) {
+    val body: View = view.findViewById(R.id.cardBody)
+    val arrow: TextView = view.findViewById(R.id.foldArrow)
     val question: TextView = view.findViewById(R.id.cardQuestion)
     val answer: TextView = view.findViewById(R.id.cardAnswer)
+    val actions: View = view.findViewById(R.id.cardActions)
     val edit: View = view.findViewById(R.id.btnEdit)
     val delete: View = view.findViewById(R.id.btnDelete)
 }

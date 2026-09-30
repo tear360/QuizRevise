@@ -5,7 +5,7 @@ struct StudyView: View {
     let onFinish: (Int, Int) -> Void
     @Environment(\.presentationMode) private var presentation
 
-    enum Phase { case modeChoice, flash, quiz, done }
+    enum Phase { case modeChoice, flash, quiz, write, done }
     @State private var phase: Phase = .modeChoice
     @State private var order: [Int] = []
     @State private var pos = 0
@@ -13,6 +13,8 @@ struct StudyView: View {
     @State private var revealed = false
     @State private var quizOptions: [String] = []
     @State private var selectedOption: String?
+    @State private var writtenText = ""
+    @State private var writeChecked = false
     @State private var delayTask: DispatchWorkItem?
     @State private var flipAngle: Double = 0
     @State private var flipAnimating = false
@@ -29,13 +31,15 @@ struct StudyView: View {
                         .buttonStyle(.borderedProminent).controlSize(.large)
                     Button("❓ QCM") { start("quiz") }
                         .buttonStyle(.bordered).controlSize(.large)
+                    Button("✏️ Réécrire le mot") { start("write") }
+                        .buttonStyle(.bordered).controlSize(.large)
                     Spacer()
                 case .flash, .quiz:
                     ProgressView(value: Double(pos), total: Double(order.count))
                         .padding(.horizontal)
                     Text("\(min(pos + 1, order.count)) / \(order.count)")
                         .font(.caption).foregroundColor(.secondary)
-                    if phase == .flash { flashCard } else { quizCard }
+                    if phase == .flash { flashCard } else if phase == .quiz { quizCard } else { writeCard }
                 case .done:
                     Spacer()
                     Text("Session terminée !").font(.title2).bold()
@@ -55,10 +59,16 @@ struct StudyView: View {
                 }
             }
         }
-        .interactiveDismissDisabled(phase == .flash || phase == .quiz)
+        .interactiveDismissDisabled(phase == .flash || phase == .quiz || phase == .write)
     }
 
-    private var currentMode: String { phase == .quiz ? "quiz" : "flash" }
+    private var currentMode: String {
+        switch phase {
+        case .quiz: return "quiz"
+        case .write: return "write"
+        default: return "flash"
+        }
+    }
 
     private var flashCard: some View {
         VStack(spacing: 24) {
@@ -119,6 +129,36 @@ struct StudyView: View {
         .padding(.top, 12)
     }
 
+    private var writeCard: some View {
+        VStack(spacing: 20) {
+            Text(currentCard.question)
+                .font(.title2).bold().multilineTextAlignment(.center)
+                .padding(.horizontal)
+            TextField("Ta réponse", text: $writtenText, onCommit: { checkWritten() })
+                .textFieldStyle(.roundedBorder)
+                .padding(.horizontal)
+                .disabled(writeChecked)
+            if writeChecked {
+                Text(writtenText.compareFolded == currentCard.compareFolded ? "Correct !" : "Raté… → \(currentCard.answer)")
+                    .font(.headline)
+                    .foregroundColor(writtenText.compareFolded == currentCard.compareFolded ? .green : .red)
+            }
+            if !writeChecked {
+                Button("Valider") { checkWritten() }
+                    .buttonStyle(.borderedProminent).controlSize(.large)
+                    .disabled(writtenText.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+            Spacer()
+        }
+        .padding(.top, 12)
+    }
+
+    private func checkWritten() {
+        guard !writeChecked, !writtenText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        writeChecked = true
+        answer(writtenText.compareFolded == currentCard.compareFolded)
+    }
+
     private func optionColor(_ option: String) -> Color {
         guard let sel = selectedOption else { return .accentColor }
         if option == sel { return option == currentCard.answer ? .green : .red }
@@ -132,7 +172,9 @@ struct StudyView: View {
         correct = 0
         revealed = false
         selectedOption = nil
-        phase = mode == "flash" ? .flash : .quiz
+        writtenText = ""
+        writeChecked = false
+        phase = mode == "flash" ? .flash : (mode == "quiz" ? .quiz : .write)
         if mode == "quiz" { prepareQuiz() }
     }
 
@@ -149,6 +191,8 @@ struct StudyView: View {
             revealed = false
             flipAngle = 0
             selectedOption = nil
+            writtenText = ""
+            writeChecked = false
             if pos >= order.count {
                 onFinish(order.count, correct)
                 phase = .done
@@ -157,7 +201,19 @@ struct StudyView: View {
             }
         }
         delayTask = task
-        DispatchQueue.main.asyncAfter(deadline: .now() + (phase == .quiz ? 0.9 : 0.2), execute: task)
+        DispatchQueue.main.asyncAfter(deadline: .now() + (phase == .quiz ? 0.9 : (phase == .write ? 1.2 : 0.2)), execute: task)
+    }
+}
+
+/// Comparaison tolérante (mode Réécrire) : casse, accents, ponctuation et espaces ignorés.
+private extension String {
+    var compareFolded: String {
+        let folded = folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "fr_FR"))
+        let cleaned = folded.map { ch -> Character in
+            (ch.isLetter || ch.isNumber) ? ch : " "
+        }
+        return String(cleaned).split(separator: " ", omittingEmptySubsequences: true)
+            .joined(separator: " ").lowercased()
     }
 }
 

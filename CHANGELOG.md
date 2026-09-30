@@ -4,6 +4,12 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.6.0] - 2026-09-30
+
+### Ajouts
+- ✏️ **Nouveau mode de révision « Réécrire le mot »** : la question s'affiche, tu tapes ta réponse et l'app te dit si c'est correct — comparaison tolérante (casse, accents, ponctuation et espaces ignorés). Disponible sur Android, PC (Windows/Linux) et iPhone.
+- 📂 **Cartes pliées par défaut dans un paquet** : la réponse est masquée et un appui déplie la carte. Les boutons Modifier/Supprimer n'apparaissent qu'une fois dépliée — impossible désormais de supprimer une carte par accident en voulant lancer une révision.
+
 ## [1.5.3] - 2026-09-30
 
 ### Corrections (Android)

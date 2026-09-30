@@ -23,6 +23,10 @@
 
     <string name="flashcards">Flashcards</string>
     <string name="quiz">QCM</string>
+    <string name="rewrite">Réécrire le mot</string>
+    <string name="write_hint">Ta réponse</string>
+    <string name="validate">Valider</string>
+    <string name="fold_hint">Touche la carte pour voir la réponse</string>
     <string name="session_done">Session terminée !</string>
     <string name="score_label">Score : %1$d / %2$d (%3$d%%)</string>
     <string name="again">Recommencer</string>

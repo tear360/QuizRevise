@@ -18,12 +18,13 @@ struct DeckView: View {
             } else {
                 List {
                     ForEach(deck.cards) { card in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(card.question).font(.headline)
-                            Text(card.answer).font(.subheadline).foregroundColor(.secondary)
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture { cardToEdit = card }
+                        // Carte PLIÉE par défaut : un appui déplie (réponse + actions).
+                        // Évite d'éditer/supprimer par accident en visant « Réviser ».
+                        FoldableCard(
+                            card: card,
+                            onEdit: { cardToEdit = card },
+                            onDelete: { store.deleteCard(card, in: deck) }
+                        )
                     }
                     .onDelete { offsets in
                         for i in offsets { store.deleteCard(deck.cards[i], in: deck) }
@@ -63,6 +64,37 @@ struct DeckView: View {
                 store.updateCard(card, in: deck, question: q, answer: a)
             }
         }
+    }
+}
+
+/// Carte pliée par défaut : la réponse et les boutons n'apparaissent qu'après appui.
+private struct FoldableCard: View {
+    let card: Card
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    @State private var expanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(card.question).font(.headline)
+                Spacer()
+                Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                    .font(.caption).foregroundColor(.accentColor)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { withAnimation { expanded.toggle() } }
+            if expanded {
+                Text(card.answer).font(.subheadline).foregroundColor(.secondary)
+                HStack(spacing: 10) {
+                    Button("Modifier", action: onEdit)
+                        .buttonStyle(.bordered).controlSize(.small)
+                    Button("Supprimer", role: .destructive, action: onDelete)
+                        .buttonStyle(.bordered).controlSize(.small)
+                }
+            }
+        }
+        .padding(.vertical, 2)
     }
 }
 
