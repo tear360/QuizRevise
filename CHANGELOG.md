@@ -4,6 +4,13 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.5.1] - 2026-09-30
+
+### Corrections (Android)
+- 🔄 **Mise à jour automatique réparée de bout en bout** : l'APK est re-téléchargé, l'installation se relance d'elle-même au retour des réglages d'autorisation « sources inconnues » (elle restait bloquée avant), et l'application redémarre proprement sur sa nouvelle version une fois l'APK remplacé.
+- 🔕 **Plus de notification « Tu as déjà la dernière version »** à chaque ouverture de l'application : le message ne s'affiche que lors d'une vérification manuelle.
+- 🧹 La notification de téléchargement disparaît désormais seule à la fin, au lieu de rester collée.
+
 ## [1.5.0] - 2026-09-30
 
 ### Ajouts

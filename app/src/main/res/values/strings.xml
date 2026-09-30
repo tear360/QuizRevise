@@ -72,5 +72,6 @@
     <string name="update_downloaded">Mise à jour téléchargée.\nLance l\'installation (Android demandera ton autorisation).</string>
     <string name="update_install">Installer</string>
     <string name="update_failed">Échec du téléchargement, réessaie plus tard.</string>
+    <string name="update_relaunch">Mise à jour installée ! Relancement de QuizRévise…</string>
     <string name="update_channel">Mises à jour</string>
 </resources>

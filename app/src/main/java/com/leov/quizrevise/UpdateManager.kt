@@ -32,6 +32,12 @@ object UpdateManager {
 
     data class Release(val version: String, val apkUrl: String, val notes: String)
 
+    /** APK en attente d'installation : la pose est reprise après le retour des réglages d'autorisation. */
+    private var pendingInstallFile: File? = null
+
+    /** Version installée constatée au dernier onResume : permet de détecter un APK remplacé et de relancer l'app. */
+    private var lastKnownVersion: String? = null
+
     /** Vérifie les mises à jour. [silent] = aucun message si tout est à jour. */
     fun check(activity: Activity, silent: Boolean) {
         Thread {
@@ -59,7 +65,9 @@ object UpdateManager {
                         }
                         else -> {
                             handled = true
-                            activity.runOnUiThread {
+                            // En vérification automatique (ouverture de l'app) : AUCUNE notification
+                            // « vous êtes à jour » — c'était le spam à chaque lancement.
+                            if (!silent) activity.runOnUiThread {
                                 toast(activity, activity.getString(R.string.update_none, current))
                             }
                         }
@@ -124,7 +132,9 @@ object UpdateManager {
         val request = DownloadManager.Request(Uri.parse(release.apkUrl))
             .setTitle("QuizRévise ${release.version}")
             .setDescription("Mise à jour de QuizRévise")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            // Notification visible UNIQUEMENT pendant le téléchargement : elle disparaît
+            // d'elle-même à la fin (VISIBILITY_VISIBLE_NOTIFY_COMPLETED restait collée).
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
             .setDestinationUri(Uri.fromFile(dest))
         val dm = activity.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val id = dm.enqueue(request)
@@ -191,6 +201,9 @@ object UpdateManager {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
             !activity.packageManager.canRequestPackageInstalls()
         ) {
+            // On mémorise la reprise : au retour des réglages (onResume → onAppResumed),
+            // l'installation redémarre toute seule au lieu de rester bloquée.
+            pendingInstallFile = file
             val intent = Intent(
                 Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                 Uri.parse("package:${activity.packageName}")
@@ -199,6 +212,40 @@ object UpdateManager {
             toast(activity, R.string.update_downloaded)
             return
         }
+        triggerInstall(activity, file)
+    }
+
+    /**
+     * À appeler depuis onResume() de chaque activité :
+     * - reprend l'installation en attente après l'autorisation « sources inconnues » ;
+     * - si l'APK a été remplacé pendant que le processus vivait, relance l'app
+     *   proprement sur sa nouvelle version.
+     */
+    fun onAppResumed(activity: Activity) {
+        val file = pendingInstallFile
+        if (file != null && file.exists()) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
+                activity.packageManager.canRequestPackageInstalls()
+            ) {
+                pendingInstallFile = null
+                triggerInstall(activity, file)
+                return
+            }
+            // Permission toujours absente : la reprise reste en attente.
+        }
+        try {
+            val installed = activity.packageManager.getPackageInfo(activity.packageName, 0).versionName
+            val known = lastKnownVersion
+            if (known != null && installed != known) {
+                toast(activity, activity.getString(R.string.update_relaunch))
+                relaunch(activity)
+                return
+            }
+            lastKnownVersion = installed
+        } catch (_: Exception) { }
+    }
+
+    private fun triggerInstall(activity: Activity, file: File) {
         try {
             val uri = FileProvider.getUriForFile(activity, "${activity.packageName}.fileprovider", file)
             val intent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
@@ -212,6 +259,17 @@ object UpdateManager {
         } catch (e: Exception) {
             toast(activity, R.string.update_failed)
         }
+    }
+
+    /** Redémarre l'application (après une installation réussie au-dessus du processus vivant). */
+    private fun relaunch(activity: Activity) {
+        try {
+            val intent = activity.packageManager.getLaunchIntentForPackage(activity.packageName)
+            intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            activity.finishAffinity()
+            if (intent != null) activity.startActivity(intent)
+        } catch (_: Exception) { }
+        Runtime.getRuntime().exit(0)
     }
 
     private fun toast(activity: Activity, resId: Int) =

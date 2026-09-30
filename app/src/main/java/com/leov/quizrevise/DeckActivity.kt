@@ -55,6 +55,7 @@ class DeckActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        UpdateManager.onAppResumed(this)
         refresh()
     }
 

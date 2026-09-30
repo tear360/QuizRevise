@@ -74,6 +74,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Reprend une installation en attente (retour des réglages d'autorisation)
+        // et relance l'app si l'APK a été remplacé pendant que le processus vivait.
+        UpdateManager.onAppResumed(this)
         refresh()
     }
 
