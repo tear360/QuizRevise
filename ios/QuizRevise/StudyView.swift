@@ -301,9 +301,13 @@ struct StudyView: View {
             }
         }
         delayTask = task
-        let delay: Double = phase == .quiz ? 0.9
-            : (phase == .write ? 1.2
-            : (phase == .test ? (testIsQcm ? 0.9 : 1.2) : 0.2))
+        let delay: Double
+        switch phase {
+        case .quiz: delay = 0.9
+        case .write: delay = 1.2
+        case .test: delay = testIsQcm ? 0.9 : 1.2
+        default: delay = 0.2
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: task)
     }
 }

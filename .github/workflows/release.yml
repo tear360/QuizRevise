@@ -177,9 +177,18 @@ jobs:
       - name: Build (non signé)
         run: |
           cd ios
+          set -o pipefail
           xcodebuild -project QuizRevise.xcodeproj -scheme QuizRevise \
             -configuration Release -sdk iphoneos -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" build
+            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" build 2>&1 | tee build.log
+
+      - name: Diagnostic (erreurs de compilation → annotations)
+        if: failure()
+        run: |
+          cd ios
+          grep -E "error:|fatal error|Fatal error" build.log | head -10 | while IFS= read -r line; do
+            echo "::error::${line:0:400}"
+          done
 
       - name: Package IPA
         run: |
