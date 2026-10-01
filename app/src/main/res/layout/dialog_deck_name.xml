@@ -5,42 +5,43 @@
     android:paddingHorizontal="24dp"
     android:paddingTop="16dp">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/deckNameLayout"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:hint="@string/deck_name_hint">
+        android:orientation="vertical">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/deckNameInput"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/deckNameLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:imeOptions="actionDone"
-            android:inputType="textCapSentences"
-            android:maxLines="1" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginBottom="8dp"
+            android:hint="@string/deck_name_hint">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="@string/deck_color_hint"
-        android:textColor="@color/on_surface_variant"
-        android:textSize="13sp"
-        android:textStyle="bold" />
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/deckNameInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionDone"
+                android:inputType="textCapSentences"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:scrollbars="none">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/deck_color_hint"
+            android:textColor="@color/on_surface_variant"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
+        <!-- Grille remplie par le code (2 rangées de 6 pastilles) : aucune couleur
+             n'est coupée, aucun défilement n'est nécessaire. -->
         <LinearLayout
             android:id="@+id/deckColorRow"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingBottom="6dp" />
-    </HorizontalScrollView>
+            android:layout_marginTop="6dp"
+            android:orientation="vertical" />
+    </LinearLayout>
 </ScrollView>

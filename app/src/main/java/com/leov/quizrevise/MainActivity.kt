@@ -2,11 +2,14 @@ package com.leov.quizrevise
 
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
+import android.util.Log
 import android.net.Uri
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -101,56 +104,109 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Construit une rangée de pastilles de couleurs ; renvoie la couleur choisie.
-     * La pastille active est entourée ; un appui sur une autre la déplace.
+     * Construit une grille de pastilles de couleurs (2 rangées de 6) ; renvoie
+     * la couleur choisie. La pastille active est entourée ; un appui sur une
+     * autre la déplace. Toutes les couleurs sont visibles sans défilement.
      */
     private fun buildSwatches(container: LinearLayout, initial: Int): () -> Int {
-        var selected = initial
+        val selection = intArrayOf(initial)
         val density = resources.displayMetrics.density
-        val size = (38 * density).toInt()
-        val repaints = mutableListOf<() -> Unit>()
+        val size = (36 * density).toInt()
+        val perRow = 6
 
-        for (color in DECK_COLORS) {
-            val dot = View(this)
-            dot.layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                marginEnd = (10 * density).toInt()
-            }
-            fun paint(active: Boolean) {
-                dot.background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(color)
-                    if (active) {
-                        setStroke((3 * density).toInt(), ContextCompat.getColor(this@MainActivity, R.color.on_surface))
-                    }
+        var index = 0
+        while (index < DECK_COLORS.size) {
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            val end = minOf(index + perRow, DECK_COLORS.size)
+            for (i in index until end) {
+                val color = DECK_COLORS[i]
+                // Cellule pondérée : 6 pastilles se partagent la largeur, même
+                // sur les petits écrans (rien ne sort jamais de la grille) ;
+                // la pastille reste un carré centré, donc un vrai cercle.
+                val cell = FrameLayout(this)
+                cell.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                val dot = View(this)
+                dot.tag = color
+                dot.layoutParams = FrameLayout.LayoutParams(size, size, Gravity.CENTER)
+                dot.setOnClickListener {
+                    selection[0] = color
+                    repaintSwatches(container, color, density)
                 }
+                cell.addView(dot)
+                row.addView(cell)
+            }
+            container.addView(row)
+            index = end
+        }
+        repaintSwatches(container, initial, density)
+        return { selection[0] }
+    }
+
+    /** Redessine toutes les pastilles : entourée pour la sélection, sinon discrète. */
+    private fun repaintSwatches(container: LinearLayout, selected: Int, density: Float) {
+        for (r in 0 until container.childCount) {
+            val row = container.getChildAt(r) as? LinearLayout ?: continue
+            for (i in 0 until row.childCount) {
+                val cell = row.getChildAt(i) as? ViewGroup ?: continue
+                if (cell.childCount == 0) continue
+                val dot = cell.getChildAt(0)
+                val color = dot.tag as? Int ?: continue
+                val active = color == selected
+                val gd = GradientDrawable()
+                gd.shape = GradientDrawable.OVAL
+                gd.setColor(color)
+                if (active) {
+                    gd.setStroke((3 * density).toInt(), ContextCompat.getColor(this, R.color.on_surface))
+                }
+                dot.background = gd
                 dot.alpha = if (active) 1f else 0.8f
             }
-            repaints.add { paint(color == selected) }
-            dot.setOnClickListener {
-                selected = color
-                repaints.forEach { it() }
-            }
-            container.addView(dot)
         }
-        repaints.forEach { it() }
-        return { selected }
     }
 
     private fun askNewDeck() {
-        // Dialogue Material (TextInputLayout) : l'EditText brut paddé en pixels
-        // collait le texte à la ligne de soulignement.
+        // Toute erreur d'affichage du dialogue ne doit JAMAIS fermer l'app :
+        // au pire on retombe sur le formulaire sans couleurs.
+        try {
+            showDeckDialog(null)
+        } catch (t: Throwable) {
+            Log.e("QuizRevise", "Dialogue de création impossible", t)
+            Toast.makeText(this, getString(R.string.dialog_error, t.message ?: ""), Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /**
+     * Dialogue unique création/renommage : nom + grille de couleurs.
+     * Les pastilles sont un bonus : si elles échouent, le dialogue marche quand même.
+     */
+    private fun showDeckDialog(deck: Deck?) {
         val view = layoutInflater.inflate(R.layout.dialog_deck_name, null)
         val input = view.findViewById<TextInputEditText>(R.id.deckNameInput)
-        val colorRow = view.findViewById<LinearLayout>(R.id.deckColorRow)
-        val defaultColor = DECK_COLORS[db.decks().size % DECK_COLORS.size]
-        val getSelectedColor = buildSwatches(colorRow, defaultColor)
+        if (deck != null) input.setText(deck.name)
+
+        var getSelectedColor: () -> Int = {
+            deck?.color ?: DECK_COLORS[db.decks().size % DECK_COLORS.size]
+        }
+        try {
+            val colorRow = view.findViewById<LinearLayout>(R.id.deckColorRow)
+            val initial = deck?.color ?: DECK_COLORS[db.decks().size % DECK_COLORS.size]
+            getSelectedColor = buildSwatches(colorRow, initial)
+        } catch (t: Throwable) {
+            // Le dialogue reste utilisable sans couleurs plutôt que de planter.
+            Log.e("QuizRevise", "Pastilles de couleur indisponibles", t)
+        }
+
         AlertDialog.Builder(this)
-            .setTitle(R.string.new_deck)
+            .setTitle(if (deck == null) R.string.new_deck else R.string.rename)
             .setView(view)
-            .setPositiveButton(R.string.create) { _, _ ->
+            .setPositiveButton(if (deck == null) R.string.create else R.string.save) { _, _ ->
                 val name = input.text.toString().trim()
                 if (name.isNotEmpty()) {
-                    db.createDeck(name, getSelectedColor())
+                    if (deck == null) db.createDeck(name, getSelectedColor())
+                    else {
+                        db.renameDeck(deck.id, name)
+                        db.updateDeckColor(deck.id, getSelectedColor())
+                    }
                     refresh()
                 }
             }
@@ -222,39 +278,27 @@ class MainActivity : AppCompatActivity() {
         }
 
         private fun renameDialog(deck: Deck) {
-            val view = layoutInflater.inflate(R.layout.dialog_deck_name, null)
-            val input = view.findViewById<TextInputEditText>(R.id.deckNameInput)
-            input.setText(deck.name)
-            val colorRow = view.findViewById<LinearLayout>(R.id.deckColorRow)
-            val getSelectedColor = buildSwatches(colorRow, deck.color)
-            AlertDialog.Builder(this@MainActivity)
-                .setTitle(R.string.rename)
-                .setView(view)
-                .setPositiveButton(R.string.save) { _, _ ->
-                    val name = input.text.toString().trim()
-                    if (name.isNotEmpty()) {
-                        db.renameDeck(deck.id, name)
-                        db.updateDeckColor(deck.id, getSelectedColor())
-                        refresh()
-                    }
-                }
-                .setNegativeButton(R.string.cancel, null)
-                .show()
+            showDeckDialog(deck)
         }
 
         private fun colorDialog(deck: Deck) {
-            val view = layoutInflater.inflate(R.layout.dialog_deck_color, null)
-            val row = view.findViewById<LinearLayout>(R.id.colorSwatchesRow)
-            val getSelectedColor = buildSwatches(row, deck.color)
-            AlertDialog.Builder(this@MainActivity)
-                .setTitle(R.string.deck_color_title)
-                .setView(view)
-                .setPositiveButton(R.string.save) { _, _ ->
-                    db.updateDeckColor(deck.id, getSelectedColor())
-                    refresh()
-                }
-                .setNegativeButton(R.string.cancel, null)
-                .show()
+            try {
+                val view = layoutInflater.inflate(R.layout.dialog_deck_color, null)
+                val row = view.findViewById<LinearLayout>(R.id.colorSwatchesRow)
+                val getSelectedColor = buildSwatches(row, deck.color)
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle(R.string.deck_color_title)
+                    .setView(view)
+                    .setPositiveButton(R.string.save) { _, _ ->
+                        db.updateDeckColor(deck.id, getSelectedColor())
+                        refresh()
+                    }
+                    .setNegativeButton(R.string.cancel, null)
+                    .show()
+            } catch (t: Throwable) {
+                Log.e("QuizRevise", "Dialogue de couleur impossible", t)
+                Toast.makeText(this@MainActivity, getString(R.string.dialog_error, t.message ?: ""), Toast.LENGTH_LONG).show()
+            }
         }
 
         private fun confirmDelete(deck: Deck) {

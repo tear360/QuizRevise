@@ -4,6 +4,12 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.8.1] - 2026-10-01
+
+### Corrections (Android)
+- 🐞 **Le bouton « + » ne ferme plus l'application** : le dialogue de création de paquet ne peut plus faire planter QuizRévise, même en cas d'erreur d'affichage (un message d'erreur s'affiche à la place, et le dialogue reste utilisable).
+- 🎨 **Toutes les couleurs visibles sans défilement** : les 12 couleurs du paquet s'affichent désormais sur une grille de 2 rangées de 6 pastilles — rien n'est coupé, même sur les petits écrans (fini le défilement horizontal impossible).
+
 ## [1.8.0] - 2026-10-01
 
 ### Ajouts
