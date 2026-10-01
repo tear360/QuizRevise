@@ -4,6 +4,7 @@ struct StudyView: View {
     let cards: [Card]
     let onFinish: (Int, Int) -> Void
     @Environment(\.presentationMode) private var presentation
+    @Environment(\.scenePhase) private var scenePhase
 
     enum Phase { case modeChoice, flash, quiz, write, test, done }
     @State private var phase: Phase = .modeChoice
@@ -84,10 +85,10 @@ struct StudyView: View {
             }
         }
         .interactiveDismissDisabled(phase == .flash || phase == .quiz || phase == .write || phase == .test)
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+        .onChange(of: scenePhase) { newPhase in
             // Anti-triche : quitter l'app pendant l'épreuve (autre app, accueil…)
             // interrompt le test ; la note ne sera pas comptée.
-            if phase == .test && pos < order.count { testAbandoned = true }
+            if newPhase != .active && phase == .test && pos < order.count { testAbandoned = true }
         }
     }
 
