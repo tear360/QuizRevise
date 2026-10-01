@@ -134,14 +134,15 @@ struct StudyView: View {
             Text(currentCard.question)
                 .font(.title2).bold().multilineTextAlignment(.center)
                 .padding(.horizontal)
-            TextField("Ta réponse", text: $writtenText, onCommit: { checkWritten() })
+            TextField("Ta réponse", text: $writtenText)
                 .textFieldStyle(.roundedBorder)
+                .onSubmit { checkWritten() }
                 .padding(.horizontal)
                 .disabled(writeChecked)
             if writeChecked {
-                Text(writtenText.compareFolded == currentCard.compareFolded ? "Correct !" : "Raté… → \(currentCard.answer)")
+                Text(writtenText.compareFolded == currentCard.answer.compareFolded ? "Correct !" : "Raté… → \(currentCard.answer)")
                     .font(.headline)
-                    .foregroundColor(writtenText.compareFolded == currentCard.compareFolded ? .green : .red)
+                    .foregroundColor(writtenText.compareFolded == currentCard.answer.compareFolded ? .green : .red)
             }
             if !writeChecked {
                 Button("Valider") { checkWritten() }
@@ -156,7 +157,7 @@ struct StudyView: View {
     private func checkWritten() {
         guard !writeChecked, !writtenText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         writeChecked = true
-        answer(writtenText.compareFolded == currentCard.compareFolded)
+        answer(writtenText.compareFolded == currentCard.answer.compareFolded)
     }
 
     private func optionColor(_ option: String) -> Color {
