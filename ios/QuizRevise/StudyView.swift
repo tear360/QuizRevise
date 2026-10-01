@@ -239,7 +239,7 @@ struct StudyView: View {
         testIsQcm = Bool.random() && enough
         if testIsQcm {
             let distractors = cards.map(\.answer)
-                .filter { $0 != currentCard.answer && !$0.answer.trimmingCharacters(in: .whitespaces).isEmpty }
+                .filter { $0 != currentCard.answer && !$0.trimmingCharacters(in: .whitespaces).isEmpty }
                 .shuffled().prefix(3)
             quizOptions = (Array(distractors) + [currentCard.answer]).shuffled()
         }
