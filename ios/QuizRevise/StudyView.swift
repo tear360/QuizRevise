@@ -5,7 +5,7 @@ struct StudyView: View {
     let onFinish: (Int, Int) -> Void
     @Environment(\.presentationMode) private var presentation
 
-    enum Phase { case modeChoice, flash, quiz, write, done }
+    enum Phase { case modeChoice, flash, quiz, write, test, done }
     @State private var phase: Phase = .modeChoice
     @State private var order: [Int] = []
     @State private var pos = 0
@@ -18,8 +18,16 @@ struct StudyView: View {
     @State private var delayTask: DispatchWorkItem?
     @State private var flipAngle: Double = 0
     @State private var flipAnimating = false
+    // État du mode Test : 10 questions mixtes, pas de retour arrière, note sur 20.
+    @State private var testIsQcm = false
+    @State private var testAbandoned = false
+    // Dernier mode lancé (phase == .done ne connaît plus le mode).
+    @State private var lastMode = "flash"
 
     private var currentCard: Card { cards[order[pos]] }
+
+    /// Un test type professeur compte 10 questions (chaque bonne réponse vaut 2 points sur 20).
+    private static let testLength = 10
 
     var body: some View {
         NavigationView {
@@ -33,19 +41,35 @@ struct StudyView: View {
                         .buttonStyle(.bordered).controlSize(.large)
                     Button("✏️ Réécrire le mot") { start("write") }
                         .buttonStyle(.bordered).controlSize(.large)
+                    Button("📝 Test (noté sur 20)") { start("test") }
+                        .buttonStyle(.bordered).controlSize(.large)
                     Spacer()
-                case .flash, .quiz, .write:
+                case .flash, .quiz, .write, .test:
                     ProgressView(value: Double(pos), total: Double(order.count))
                         .padding(.horizontal)
                     Text("\(min(pos + 1, order.count)) / \(order.count)")
                         .font(.caption).foregroundColor(.secondary)
-                    if phase == .flash { flashCard } else if phase == .quiz { quizCard } else { writeCard }
+                    if phase == .flash { flashCard } else if phase == .quiz { quizCard } else if phase == .write { writeCard } else { testCard }
                 case .done:
                     Spacer()
-                    Text("Session terminée !").font(.title2).bold()
-                    Text("Score : \(correct) / \(order.count) (\(correct * 100 / max(order.count, 1))%)")
-                        .font(.title3).foregroundColor(.accentColor).bold()
-                    Button("Recommencer") { start(currentMode) }
+                    if lastMode == "test" && testAbandoned {
+                        Text("Test interrompu").font(.title2).bold()
+                        Text("Tu as quitté l'app pendant l'épreuve — la note n'est pas comptée.")
+                            .font(.body).foregroundColor(.secondary)
+                            .multilineTextAlignment(.center).padding(.horizontal)
+                    } else if lastMode == "test" {
+                        Text("Test terminé !").font(.title2).bold()
+                        Text("Note : \(correct * 20 / max(order.count, 1)) / 20")
+                            .font(.system(size: 34, weight: .bold)).foregroundColor(.accentColor)
+                        Text(mentionText).font(.title3)
+                        Text("Score : \(correct) / \(order.count) (\(correct * 100 / max(order.count, 1))%)")
+                            .font(.subheadline).foregroundColor(.secondary)
+                    } else {
+                        Text("Session terminée !").font(.title2).bold()
+                        Text("Score : \(correct) / \(order.count) (\(correct * 100 / max(order.count, 1))%)")
+                            .font(.title3).foregroundColor(.accentColor).bold()
+                    }
+                    Button("Recommencer") { start(lastMode) }
                         .buttonStyle(.borderedProminent)
                     Button("Fermer") { presentation.wrappedValue.dismiss() }
                     Spacer()
@@ -59,13 +83,19 @@ struct StudyView: View {
                 }
             }
         }
-        .interactiveDismissDisabled(phase == .flash || phase == .quiz || phase == .write)
+        .interactiveDismissDisabled(phase == .flash || phase == .quiz || phase == .write || phase == .test)
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            // Anti-triche : quitter l'app pendant l'épreuve (autre app, accueil…)
+            // interrompt le test ; la note ne sera pas comptée.
+            if phase == .test && pos < order.count { testAbandoned = true }
+        }
     }
 
     private var currentMode: String {
         switch phase {
         case .quiz: return "quiz"
         case .write: return "write"
+        case .test: return "test"
         default: return "flash"
         }
     }
@@ -155,6 +185,69 @@ struct StudyView: View {
     }
 
     private func checkWritten() {
+        guard phase == .write else { return }
+        guard !writeChecked, !writtenText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        writeChecked = true
+        answer(writtenText.compareFolded == currentCard.answer.compareFolded)
+    }
+
+    /// Épreuve type professeur : QCM ou réécriture tiré au sort, sans retour en arrière.
+    private var testCard: some View {
+        VStack(spacing: 20) {
+            Text(currentCard.question)
+                .font(.title2).bold().multilineTextAlignment(.center)
+                .padding(.horizontal)
+            if testIsQcm {
+                ForEach(quizOptions, id: \.self) { option in
+                    Button(option) {
+                        if selectedOption == nil { selectedOption = option; answer(option == currentCard.answer) }
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(optionColor(option))
+                    .disabled(selectedOption != nil)
+                }
+            } else {
+                TextField("Ta réponse", text: $writtenText)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { checkTestWritten() }
+                    .padding(.horizontal)
+                    .disabled(writeChecked)
+                if !writeChecked {
+                    Button("Valider") { checkTestWritten() }
+                        .buttonStyle(.borderedProminent).controlSize(.large)
+                        .disabled(writtenText.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            Spacer()
+        }
+        .padding(.top, 12)
+    }
+
+    private var mentionText: String {
+        let note = correct * 20 / max(order.count, 1)
+        if note >= 16 { return "Très bien ! 🌟" }
+        if note >= 12 { return "Bien 👍" }
+        if note >= 10 { return "Assez bien" }
+        return "Insuffisant — réessaie pour progresser 💪"
+    }
+
+    private func prepareTestQuestion() {
+        let enough = cards.filter {
+            $0.answer != currentCard.answer && !$0.answer.trimmingCharacters(in: .whitespaces).isEmpty
+        }.count >= 3
+        testIsQcm = Bool.random() && enough
+        if testIsQcm {
+            let distractors = cards.map(\.answer)
+                .filter { $0 != currentCard.answer && !$0.answer.trimmingCharacters(in: .whitespaces).isEmpty }
+                .shuffled().prefix(3)
+            quizOptions = (Array(distractors) + [currentCard.answer]).shuffled()
+        }
+        selectedOption = nil
+        writtenText = ""
+        writeChecked = false
+    }
+
+    private func checkTestWritten() {
         guard !writeChecked, !writtenText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         writeChecked = true
         answer(writtenText.compareFolded == currentCard.answer.compareFolded)
@@ -168,15 +261,19 @@ struct StudyView: View {
     }
 
     private func start(_ mode: String) {
+        lastMode = mode
         order = Array(cards.indices).shuffled()
+        if mode == "test" && order.count > Self.testLength { order = Array(order.prefix(Self.testLength)) }
         pos = 0
         correct = 0
         revealed = false
         selectedOption = nil
         writtenText = ""
         writeChecked = false
-        phase = mode == "flash" ? .flash : (mode == "quiz" ? .quiz : .write)
+        testAbandoned = false
+        phase = mode == "flash" ? .flash : (mode == "quiz" ? .quiz : (mode == "test" ? .test : .write))
         if mode == "quiz" { prepareQuiz() }
+        if mode == "test" { prepareTestQuestion() }
     }
 
     private func prepareQuiz() {
@@ -195,14 +292,18 @@ struct StudyView: View {
             writtenText = ""
             writeChecked = false
             if pos >= order.count {
-                onFinish(order.count, correct)
+                if !(phase == .test && testAbandoned) { onFinish(order.count, correct) }
                 phase = .done
             } else {
                 if phase == .quiz { prepareQuiz() }
+                if phase == .test { prepareTestQuestion() }
             }
         }
         delayTask = task
-        DispatchQueue.main.asyncAfter(deadline: .now() + (phase == .quiz ? 0.9 : (phase == .write ? 1.2 : 0.2)), execute: task)
+        let delay: Double = phase == .quiz ? 0.9
+            : (phase == .write ? 1.2
+            : (phase == .test ? (testIsQcm ? 0.9 : 1.2) : 0.2))
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: task)
     }
 }
 

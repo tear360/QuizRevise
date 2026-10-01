@@ -1,5 +1,6 @@
 package com.leov.quizrevise
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.RadioGroup
@@ -79,6 +80,9 @@ class SettingsActivity : AppCompatActivity() {
             exportLauncher.launch("mes-paquets")
         }
         findViewById<android.view.View>(R.id.settingsStats).setOnClickListener { showStats() }
+        findViewById<android.view.View>(R.id.settingsAppLock).setOnClickListener {
+            startActivity(Intent(this, AppLockSettingsActivity::class.java))
+        }
         findViewById<android.view.View>(R.id.settingsUpdates).setOnClickListener {
             Toast.makeText(this, R.string.update_checking, Toast.LENGTH_SHORT).show()
             UpdateManager.check(this, silent = false)

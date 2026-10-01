@@ -24,6 +24,11 @@ import com.google.android.material.textfield.TextInputEditText
 
 class StudyActivity : AppCompatActivity() {
 
+    companion object {
+        /** Un test type professeur compte 10 questions, notées 2 points chacune. */
+        private const val TEST_LENGTH = 10
+    }
+
     private lateinit var db: AppDatabase
     private lateinit var deckCards: List<Card>
     private var order: List<Int> = emptyList()
@@ -35,6 +40,11 @@ class StudyActivity : AppCompatActivity() {
     private var mode = "flash"
     private var currentAnswer = ""
     private val handler = Handler(Looper.getMainLooper())
+
+    // État du mode Test : questions mixtes, pas de retour en arrière, note sur 20.
+    private var testMode = false
+    private var testAbandoned = false
+    private var currentQuestionIsQcm = false
 
     private lateinit var progressBar: LinearProgressIndicator
     private lateinit var progressText: TextView
@@ -51,6 +61,10 @@ class StudyActivity : AppCompatActivity() {
     private lateinit var answerButtons: List<Button>
     private lateinit var resultView: LinearLayout
     private lateinit var resultScore: TextView
+    private lateinit var testResultView: LinearLayout
+    private lateinit var testResultScore: TextView
+    private lateinit var testResultMention: TextView
+    private lateinit var testResultDetail: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,6 +93,10 @@ class StudyActivity : AppCompatActivity() {
         answerButtons = listOf(findViewById(R.id.answer0), findViewById(R.id.answer1), findViewById(R.id.answer2), findViewById(R.id.answer3))
         resultView = findViewById(R.id.resultView)
         resultScore = findViewById(R.id.resultScore)
+        testResultView = findViewById(R.id.testResultView)
+        testResultScore = findViewById(R.id.testResultScore)
+        testResultMention = findViewById(R.id.testResultMention)
+        testResultDetail = findViewById(R.id.testResultDetail)
 
         findViewById<Button>(R.id.btnKnew).setOnClickListener { answer(true) }
         findViewById<Button>(R.id.btnDidntKnow).setOnClickListener { answer(false) }
@@ -99,11 +117,12 @@ class StudyActivity : AppCompatActivity() {
     private fun chooseMode() {
         AlertDialog.Builder(this)
             .setTitle(R.string.study)
-            .setItems(arrayOf(getString(R.string.flashcards), getString(R.string.quiz), getString(R.string.rewrite))) { _, which ->
+            .setItems(arrayOf(getString(R.string.flashcards), getString(R.string.quiz), getString(R.string.rewrite), getString(R.string.test))) { _, which ->
                 startSession(when (which) {
                     0 -> "flash"
                     1 -> "quiz"
-                    else -> "write"
+                    2 -> "write"
+                    else -> "test"
                 })
             }
             .setCancelable(false)
@@ -112,13 +131,24 @@ class StudyActivity : AppCompatActivity() {
 
     private fun startSession(m: String) {
         mode = m
+        testMode = (m == "test")
+        testAbandoned = false
         order = deckCards.indices.shuffled()
+        if (testMode && order.size > TEST_LENGTH) order = order.take(TEST_LENGTH)
         pos = 0
         correctCount = 0
         progressBar.max = order.size
         progressBar.progress = 0
         resultView.visibility = View.GONE
+        testResultView.visibility = View.GONE
         studyArea.visibility = View.VISIBLE
+        if (testMode) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.test)
+                .setMessage(R.string.test_forbidden_hint)
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+        }
         showQuestion()
     }
 
@@ -141,7 +171,11 @@ class StudyActivity : AppCompatActivity() {
         animating = false
         cardContainer.rotationY = 0f
 
-        progressText.text = getString(R.string.progress, pos + 1, order.size)
+        progressText.text = if (testMode) {
+            getString(R.string.test_progress, pos + 1, order.size)
+        } else {
+            getString(R.string.progress, pos + 1, order.size)
+        }
         progressBar.setProgressCompat(pos, true)
         setSide(false)
 
@@ -158,6 +192,17 @@ class StudyActivity : AppCompatActivity() {
             "write" -> {
                 writeButtons.visibility = View.VISIBLE
                 writeInput.requestFocus()
+            }
+            "test" -> {
+                // Alternance aléatoire QCM / réécriture : une épreuve mixte, comme un vrai sujet.
+                currentQuestionIsQcm = (pos + order.size) % 2 == 1 || Math.random() < 0.5
+                if (currentQuestionIsQcm) {
+                    quizButtons.visibility = View.VISIBLE
+                    setupQuizOptions()
+                } else {
+                    writeButtons.visibility = View.VISIBLE
+                    writeInput.requestFocus()
+                }
             }
             else -> { /* flash : les boutons apparaissent après retournement */ }
         }
@@ -232,11 +277,12 @@ class StudyActivity : AppCompatActivity() {
     }
 
     private fun checkWritten() {
-        if (mode != "write" || writeFeedback.visibility == View.VISIBLE) return
+        val isWriteQuestion = mode == "write" || (testMode && !currentQuestionIsQcm)
+        if (!isWriteQuestion || writeFeedback.visibility == View.VISIBLE) return
         val given = writeInput.text?.toString()?.trim().orEmpty()
         if (given.isEmpty()) return
         val ok = normalized(given) == normalized(currentAnswer)
-        if (ok) correctCount++
+        score(ok)
         writeFeedback.text = if (ok) getString(R.string.correct)
         else getString(R.string.wrong) + " → " + currentAnswer
         writeFeedback.setTextColor(ContextCompat.getColor(this, if (ok) R.color.correct else R.color.wrong))
@@ -250,6 +296,11 @@ class StudyActivity : AppCompatActivity() {
             findViewById<Button>(R.id.btnValidate).isEnabled = true
             if (pos >= order.size) finishSession() else showQuestion()
         }, 1200)
+    }
+
+    /** Compte le point dans tous les modes ; en Test, chaque bonne réponse vaut 2 points sur 20. */
+    private fun score(ok: Boolean) {
+        if (ok) correctCount++
     }
 
     private fun onQuizAnswer(btn: Button) {
@@ -267,12 +318,12 @@ class StudyActivity : AppCompatActivity() {
     }
 
     private fun answer(ok: Boolean) {
-        if (ok) correctCount++
+        score(ok)
         pos++
         progressBar.setProgressCompat(pos, true)
         handler.postDelayed({
             if (pos >= order.size) finishSession() else showQuestion()
-        }, if (mode == "quiz") 900 else 150)
+        }, if (mode == "quiz" || (testMode && currentQuestionIsQcm)) 900 else 150)
     }
 
     private fun finishSession() {
@@ -281,8 +332,43 @@ class StudyActivity : AppCompatActivity() {
         flashButtons.visibility = View.GONE
         quizButtons.visibility = View.GONE
         writeButtons.visibility = View.GONE
-        resultView.visibility = View.VISIBLE
-        val pct = correctCount * 100 / order.size
-        resultScore.text = getString(R.string.score_label, correctCount, order.size, pct)
+        if (testMode) {
+            // Note ramenée sur 20 (2 points par question quand le test est complet).
+            val note = Math.round(correctCount * 20.0 / maxOf(order.size, 1)).toInt()
+            resultView.visibility = View.GONE
+            testResultView.visibility = View.VISIBLE
+            testResultScore.text = getString(R.string.test_score, note.toString())
+            testResultMention.text = when {
+                note >= 16 -> getString(R.string.mention_very_good)
+                note >= 12 -> getString(R.string.mention_good)
+                note >= 10 -> getString(R.string.mention_fair)
+                else -> getString(R.string.mention_insufficient)
+            }
+            testResultDetail.text = getString(R.string.score_label, correctCount, order.size, correctCount * 100 / maxOf(order.size, 1))
+        } else {
+            testResultView.visibility = View.GONE
+            resultView.visibility = View.VISIBLE
+            val pct = correctCount * 100 / order.size
+            resultScore.text = getString(R.string.score_label, correctCount, order.size, pct)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Anti-triche : quitter l'écran pendant l'épreuve (bouton accueil, autre app…)
+        // interrompt le test ; la note ne sera pas comptée au retour.
+        if (testMode && pos < order.size) testAbandoned = true
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (testMode && testAbandoned && pos < order.size) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.test)
+                .setMessage(R.string.test_interrupted)
+                .setPositiveButton(android.R.string.ok) { _, _ -> finish() }
+                .setCancelable(false)
+                .show()
+        }
     }
 }

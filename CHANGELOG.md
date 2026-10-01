@@ -4,6 +4,13 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.7.0] - 2026-10-01
+
+### Ajouts
+- 📝 **Nouveau mode « Test » (noté sur 20)** : 10 questions tirées au sort dans le paquet, mélange de QCM et de questions à réécrire, sans retour en arrière — la réponse est enregistrée dès la validation. Note sur 20 avec mention (Très bien, Bien, Assez bien, Insuffisant). Si le paquet a moins de 10 cartes, la note est ramenée sur 20. Disponible sur Android, PC (Windows/Linux) et iPhone.
+- 🛡️ **Anti-triche pendant le test** : quitter l'application/fenêtre pendant l'épreuve l'interrompt — la note n'est pas comptée.
+- 🔒 **Verrouillage d'applications (Android)** : dans les Paramètres → « Configurer le verrouillage », choisis les applications à bloquer et les paquets de questions. Quand tu ouvres une appli verrouillée, QuizRévise pose une question (QCM ou réécriture) : bonne réponse → l'appli s'ouvre, sinon nouvelle question. Nécessite l'autorisation d'accessibilité Android (le service ne lit aucun contenu d'écran, il détecte seulement l'appli au premier plan) ; un bouton « Tester le verrou » permet de l'essayer sur QuizRévise lui-même.
+
 ## [1.6.0] - 2026-09-30
 
 ### Ajouts

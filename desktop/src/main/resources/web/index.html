@@ -368,6 +368,17 @@
     </div>
   </div>
 
+  <div class="modal-back" id="testWarnBack" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h2>Test noté sur 20</h2>
+      <p style="color:var(--on-variant);font-size:14px">10 questions tirées au sort dans le paquet (QCM et réécriture), sans retour en arrière : la réponse est enregistrée dès la validation. Bonne chance !</p>
+      <div class="row">
+        <button class="pill" id="testWarnCancel">Annuler</button>
+        <button class="pill" id="testWarnOk">Commencer</button>
+      </div>
+    </div>
+  </div>
+
   <main id="main"><div class="loading">Chargement…</div></main>
   <button class="fab" id="fab" style="display:none">+</button>
   <button class="fab text" id="fabStudy" style="display:none"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:-2px;margin-right:6px"><path d="M8 5v14l11-7z"/></svg>Réviser</button>
@@ -436,6 +447,7 @@ const ICON_STATS = '<svg viewBox="0 0 24 24" class="i"><path d="M5 21V9h4v12H5zm
 const ICON_FLASH = '<svg viewBox="0 0 24 24" class="i"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg>';
 const ICON_QUIZ = '<svg viewBox="0 0 24 24" class="i"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>';
 const ICON_EDIT = '<svg viewBox="0 0 24 24" class="i"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+const ICON_GRADE = '<svg viewBox="0 0 24 24" class="i"><path d="M22 9L12 2 2 9v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9zm-10 7l-5-5 1.41-1.41L12 13.17l3.59-3.58L17 11l-5 5z"/></svg>';
 
 // Analyse JSON sécurisée : si le pont natif renvoie undefined (pont mort /
 // GC) ou une valeur invalide, on affiche un message clé en main au lieu
@@ -594,17 +606,35 @@ function renderStudy() {
     m.innerHTML = '<div class="mode-choice"><h2>Comment veux-tu réviser ?</h2>' +
       '<button class="pill big" id="mFlash">' + ICON_FLASH + 'Flashcards</button>' +
       '<button class="pill big" id="mQuiz">' + ICON_QUIZ + 'QCM</button>' +
-      '<button class="pill big" id="mWrite">' + ICON_EDIT + 'Réécrire le mot</button></div>';
+      '<button class="pill big" id="mWrite">' + ICON_EDIT + 'Réécrire le mot</button>' +
+      '<button class="pill big" id="mTest">' + ICON_GRADE + 'Test (noté sur 20)</button></div>';
     document.getElementById('mFlash').addEventListener('click', function () { beginMode('flash'); });
     document.getElementById('mQuiz').addEventListener('click', function () { beginMode('quiz'); });
     document.getElementById('mWrite').addEventListener('click', function () { beginMode('write'); });
+    document.getElementById('mTest').addEventListener('click', function () { beginMode('test'); });
     return;
   }
   if (session.pos >= session.order.length) {
     const pct = Math.round(session.correct * 100 / session.order.length);
-    N.recordSession(session.order.length, session.correct);
-    m.innerHTML = '<div class="mode-choice"><h2>Session terminée !</h2>' +
-      '<div class="result-score">Score : ' + session.correct + ' / ' + session.order.length + ' (' + pct + '%)</div>' +
+    const testVoid = session.mode === 'test' && session.cheated;
+    if (!testVoid) N.recordSession(session.order.length, session.correct);
+    let resultHtml;
+    if (session.mode === 'test') {
+      // Note ramenée sur 20 (2 points par question quand le test est complet).
+      const note = Math.round(session.correct * 20 / session.order.length);
+      const mention = mentionFor(note);
+      resultHtml = session.cheated
+        ? '<h2>Test interrompu</h2>' +
+          '<div style="color:var(--on-variant)">Tu as quitté la fenêtre pendant l\'épreuve — la note n\'est pas comptée.</div>'
+        : '<h2>Test terminé !</h2>' +
+          '<div class="result-score" style="font-size:34px">Note : ' + note + ' / 20</div>' +
+          '<div>' + mention + '</div>' +
+          '<div style="color:var(--on-variant);font-size:13px">' + session.correct + ' bonne(s) réponse(s) sur ' + session.order.length + ' (' + pct + '%)</div>';
+    } else {
+      resultHtml = '<h2>Session terminée !</h2>' +
+        '<div class="result-score">Score : ' + session.correct + ' / ' + session.order.length + ' (' + pct + '%)</div>';
+    }
+    m.innerHTML = '<div class="mode-choice">' + resultHtml +
       '<button class="pill big" id="rAgain">Recommencer</button>' +
       '<button class="pill big tonal" id="rBack">Retour au paquet</button></div>';
     document.getElementById('rAgain').addEventListener('click', function () { beginMode(session.mode); });
@@ -616,6 +646,57 @@ function renderStudy() {
   const progHtml = '<div class="progress-row">' + (session.pos + 1) + ' / ' + session.order.length +
     '<div class="progress-bar"><div style="width:' + prog + '%"></div></div></div>';
 
+  if (session.mode === 'test') {
+    m.innerHTML = progHtml +
+      '<div class="quiz-q">' + esc(card.question) + '</div>' +
+      (session.testIsQcm ?
+        '<div class="quiz-opts">' + session.testOptions.map((o, i) =>
+          '<button class="pill" data-i="' + i + '">' + esc(o) + '</button>').join('') + '</div>' :
+        '<div class="modal" style="margin:0 auto">' +
+          '<label>Ta réponse</label>' +
+          '<input id="writeInput" autocomplete="off">' +
+          '<div class="form-err" id="writeFeedback" style="min-height:22px"></div>' +
+          '<div class="row" style="justify-content:center"><button class="pill big" id="writeOk">Valider</button></div>' +
+        '</div>') +
+      '<div style="color:var(--on-variant);font-size:12px;margin-top:10px">Pas d\'aller-retour possible : la réponse est enregistrée dès la validation.</div>';
+    if (session.testIsQcm) {
+      m.querySelectorAll('.quiz-opts .pill').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (session.answered) return;
+          session.answered = true;
+          const good = btn.textContent === card.answer;
+          if (good) session.correct++;
+          btn.classList.add(good ? 'correct' : 'wrong');
+          if (!good) {
+            m.querySelectorAll('.quiz-opts .pill').forEach(function (b) {
+              if (b.textContent === card.answer) b.classList.add('correct');
+            });
+          }
+          setTimeout(function () { session.answered = false; session.pos++; if (session.mode === 'test' && session.pos < session.order.length) prepareTestQuestion(); render(); }, 850);
+        });
+      });
+    } else {
+      const wi = document.getElementById('writeInput');
+      wi.focus();
+      const submitWrite = function () {
+        if (window.__writeDone) return;
+        const given = wi.value.trim();
+        if (!given) return;
+        window.__writeDone = true;
+        const good = normalizeText(given) === normalizeText(card.answer);
+        if (good) session.correct++;
+        const fb = document.getElementById('writeFeedback');
+        fb.textContent = good ? 'Correct !' : 'Raté… → ' + card.answer;
+        fb.style.color = good ? 'var(--correct)' : 'var(--danger-text)';
+        document.getElementById('writeOk').disabled = true;
+        wi.disabled = true;
+        setTimeout(function () { window.__writeDone = false; session.pos++; if (session.mode === 'test' && session.pos < session.order.length) prepareTestQuestion(); render(); }, 1200);
+      };
+      document.getElementById('writeOk').addEventListener('click', submitWrite);
+      wi.addEventListener('keydown', function (e) { if (e.key === 'Enter') submitWrite(); });
+    }
+    return;
+  }
   if (session.mode === 'write') {
     m.innerHTML = progHtml +
       '<div class="quiz-q">' + esc(card.question) + '</div>' +
@@ -680,7 +761,49 @@ function renderStudy() {
   }
 }
 
-function beginMode(mode) { session.mode = mode; session.pos = 0; session.correct = 0; render(); }
+function beginMode(mode) {
+  session.mode = mode;
+  session.pos = 0;
+  session.correct = 0;
+  session.cheated = false;
+  if (mode === 'test') {
+    // Test type professeur : 10 questions mixtes tirées au sort, chaque bonne
+    // réponse vaut TEST_POINTS_PER_QUESTION points sur 20.
+    session.order = session.cards.map((_, i) => i).sort(() => Math.random() - .5).slice(0, TEST_LENGTH);
+    prepareTestQuestion();
+    showTestWarning();
+  }
+  render();
+}
+
+const TEST_LENGTH = 10;
+const TEST_POINTS_PER_QUESTION = 2;
+
+function mentionFor(note) {
+  if (note >= 16) return 'Très bien ! 🌟';
+  if (note >= 12) return 'Bien 👍';
+  if (note >= 10) return 'Assez bien';
+  return 'Insuffisant — réessaie pour progresser 💪';
+}
+
+/** Prépare le type (QCM ou réécriture) et les options de la question courante du test. */
+function prepareTestQuestion() {
+  const card = session.cards[session.order[session.pos]];
+  const enoughDistractors = session.cards.filter(c => c.answer !== card.answer && c.answer.trim() !== '').length >= 3;
+  session.testIsQcm = Math.random() < 0.5 && enoughDistractors;
+  if (session.testIsQcm) {
+    const seen = {};
+    const distractors = session.cards.map(c => c.answer).filter(a =>
+      a !== card.answer && !seen[a] && a.trim() !== '' ? (seen[a] = 1, true) : false
+    ).sort(() => Math.random() - .5).slice(0, 3);
+    session.testOptions = distractors.concat([card.answer]).sort(() => Math.random() - .5);
+  }
+}
+
+function showTestWarning() {
+  const back = document.getElementById('testWarnBack');
+  if (back) back.style.display = 'flex';
+}
 
 /** Comparaison tolérante (mode Réécrire) : casse, accents, ponctuation et espaces ignorés. */
 function normalizeText(s) {
@@ -714,7 +837,7 @@ function answerQuiz(btn, opt) {
 // Associe chaque bouton QCM à son texte (source de vérité = le DOM)
 function optsOf(btn) { return btn.textContent; }
 
-function endStudy() { go('deck'); }
+function endStudy() { session = null; go('deck'); }
 
 // ============ STATS / ABOUT / UPDATES ============
 function renderStats() {
@@ -749,6 +872,22 @@ function openSettings() {
 function closeSettings() {
   document.getElementById('settingsBack').style.display = 'none';
 }
+
+document.getElementById('testWarnOk').addEventListener('click', function () {
+  document.getElementById('testWarnBack').style.display = 'none';
+});
+document.getElementById('testWarnCancel').addEventListener('click', function () {
+  document.getElementById('testWarnBack').style.display = 'none';
+  endStudy();
+});
+
+// Anti-triche (test) : quitter la fenêtre pendant l'épreuve invalide la note.
+window.addEventListener('blur', function () {
+  if (!session || session.mode !== 'test' || session.cheated) return;
+  if (session.pos >= session.order.length) return;
+  if (document.getElementById('testWarnBack').style.display !== 'none') return;
+  session.cheated = true;
+});
 
 function showAbout() {
   alert('QuizRévise ' + N.version() + '\n\nAlternative libre à Quizlet : flashcards, QCM et statistiques.\nFonctionne hors-ligne, données stockées en local.\n\nMises à jour : https://github.com/tear360/QuizRevise/releases/latest');
