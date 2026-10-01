@@ -26,7 +26,14 @@ final class Store: ObservableObject {
 
     private let decksURL: URL
     private let statsURL: URL
-    private static let palette = ["6750A4", "1B873B", "B3261E", "0B57D0", "E8590C", "7A1FA2"]
+    /// Palette des paquets — identique sur Android, PC et iPhone.
+    static let palette = ["6750A4", "1B873B", "B3261E", "0B57D0", "E8590C", "7A1FA2",
+                          "00897B", "C2185B", "F9A825", "5D4037", "3949AB", "7CB342"]
+
+    /// Couleur par défaut d'un nouveau paquet (rotation dans la palette).
+    static func defaultColorHex(forCount count: Int) -> String {
+        palette[count % palette.count]
+    }
 
     init() {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -55,14 +62,19 @@ final class Store: ObservableObject {
 
     // MARK: - Paquets
 
-    func addDeck(named name: String) {
-        let color = Self.palette[decks.count % Self.palette.count]
+    func addDeck(named name: String, colorHex: String? = nil) {
+        let color = colorHex ?? Self.defaultColorHex(forCount: decks.count)
         decks.insert(Deck(name: name, colorHex: color), at: 0)
     }
 
     func renameDeck(_ deck: Deck, to name: String) {
         guard let i = decks.firstIndex(where: { $0.id == deck.id }) else { return }
         decks[i].name = name
+    }
+
+    func setDeckColor(_ deck: Deck, colorHex: String) {
+        guard let i = decks.firstIndex(where: { $0.id == deck.id }) else { return }
+        decks[i].colorHex = colorHex
     }
 
     func deleteDeck(_ deck: Deck) {

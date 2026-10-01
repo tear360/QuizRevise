@@ -1,22 +1,35 @@
 package com.leov.quizrevise
 
 import android.content.Intent
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        /** Palette des paquets — identique sur Android, PC et iPhone. */
+        val DECK_COLORS = intArrayOf(
+            0xFF6750A4.toInt(), 0xFF1B873B.toInt(), 0xFFB3261E.toInt(), 0xFF0B57D0.toInt(),
+            0xFFE8590C.toInt(), 0xFF7A1FA2.toInt(), 0xFF00897B.toInt(), 0xFFC2185B.toInt(),
+            0xFFF9A825.toInt(), 0xFF5D4037.toInt(), 0xFF3949AB.toInt(), 0xFF7CB342.toInt()
+        )
+    }
 
     private lateinit var db: AppDatabase
     private lateinit var adapter: DecksAdapter
@@ -87,19 +100,57 @@ class MainActivity : AppCompatActivity() {
             if (decks.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
     }
 
+    /**
+     * Construit une rangée de pastilles de couleurs ; renvoie la couleur choisie.
+     * La pastille active est entourée ; un appui sur une autre la déplace.
+     */
+    private fun buildSwatches(container: LinearLayout, initial: Int): () -> Int {
+        var selected = initial
+        val density = resources.displayMetrics.density
+        val size = (38 * density).toInt()
+        val repaints = mutableListOf<() -> Unit>()
+
+        for (color in DECK_COLORS) {
+            val dot = View(this)
+            dot.layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                marginEnd = (10 * density).toInt()
+            }
+            fun paint(active: Boolean) {
+                dot.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(color)
+                    if (active) {
+                        setStroke((3 * density).toInt(), ContextCompat.getColor(this@MainActivity, R.color.on_surface))
+                    }
+                }
+                dot.alpha = if (active) 1f else 0.8f
+            }
+            repaints.add { paint(color == selected) }
+            dot.setOnClickListener {
+                selected = color
+                repaints.forEach { it() }
+            }
+            container.addView(dot)
+        }
+        repaints.forEach { it() }
+        return { selected }
+    }
+
     private fun askNewDeck() {
         // Dialogue Material (TextInputLayout) : l'EditText brut paddé en pixels
         // collait le texte à la ligne de soulignement.
         val view = layoutInflater.inflate(R.layout.dialog_deck_name, null)
         val input = view.findViewById<TextInputEditText>(R.id.deckNameInput)
+        val colorRow = view.findViewById<LinearLayout>(R.id.deckColorRow)
+        val defaultColor = DECK_COLORS[db.decks().size % DECK_COLORS.size]
+        val getSelectedColor = buildSwatches(colorRow, defaultColor)
         AlertDialog.Builder(this)
             .setTitle(R.string.new_deck)
             .setView(view)
             .setPositiveButton(R.string.create) { _, _ ->
                 val name = input.text.toString().trim()
                 if (name.isNotEmpty()) {
-                    val colors = listOf(0xFF6750A4, 0xFF1B873B, 0xFFB3261E, 0xFF0B57D0, 0xFFE8590C, 0xFF7A1FA2)
-                    db.createDeck(name, colors[(db.decks().size) % colors.size].toInt())
+                    db.createDeck(name, getSelectedColor())
                     refresh()
                 }
             }
@@ -157,10 +208,11 @@ class MainActivity : AppCompatActivity() {
             holder.itemView.setOnLongClickListener {
                 AlertDialog.Builder(this@MainActivity)
                     .setTitle(deck.name)
-                    .setItems(arrayOf(getString(R.string.rename), "Exporter (.qrevise)", getString(R.string.delete))) { _, which ->
+                    .setItems(arrayOf(getString(R.string.rename), getString(R.string.change_color), "Exporter (.qrevise)", getString(R.string.delete))) { _, which ->
                         when (which) {
                             0 -> renameDialog(deck)
-                            1 -> exportDeck(deck)
+                            1 -> colorDialog(deck)
+                            2 -> exportDeck(deck)
                             else -> confirmDelete(deck)
                         }
                     }
@@ -173,12 +225,33 @@ class MainActivity : AppCompatActivity() {
             val view = layoutInflater.inflate(R.layout.dialog_deck_name, null)
             val input = view.findViewById<TextInputEditText>(R.id.deckNameInput)
             input.setText(deck.name)
+            val colorRow = view.findViewById<LinearLayout>(R.id.deckColorRow)
+            val getSelectedColor = buildSwatches(colorRow, deck.color)
             AlertDialog.Builder(this@MainActivity)
                 .setTitle(R.string.rename)
                 .setView(view)
                 .setPositiveButton(R.string.save) { _, _ ->
                     val name = input.text.toString().trim()
-                    if (name.isNotEmpty()) { db.renameDeck(deck.id, name); refresh() }
+                    if (name.isNotEmpty()) {
+                        db.renameDeck(deck.id, name)
+                        db.updateDeckColor(deck.id, getSelectedColor())
+                        refresh()
+                    }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        }
+
+        private fun colorDialog(deck: Deck) {
+            val view = layoutInflater.inflate(R.layout.dialog_deck_color, null)
+            val row = view.findViewById<LinearLayout>(R.id.colorSwatchesRow)
+            val getSelectedColor = buildSwatches(row, deck.color)
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle(R.string.deck_color_title)
+                .setView(view)
+                .setPositiveButton(R.string.save) { _, _ ->
+                    db.updateDeckColor(deck.id, getSelectedColor())
+                    refresh()
                 }
                 .setNegativeButton(R.string.cancel, null)
                 .show()

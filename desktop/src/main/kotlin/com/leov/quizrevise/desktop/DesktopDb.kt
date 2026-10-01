@@ -81,6 +81,11 @@ class DesktopDb(private val dbPath: String = computeDbPath()) {
             it.setString(1, name); it.setLong(2, id); it.executeUpdate()
         }
 
+    fun updateDeckColor(id: Long, color: Int) =
+        conn.prepareStatement("UPDATE decks SET color = ? WHERE id = ?").use {
+            it.setInt(1, color); it.setLong(2, id); it.executeUpdate()
+        }
+
     fun deleteDeck(id: Long) =
         conn.prepareStatement("DELETE FROM decks WHERE id = ?").use {
             it.setLong(1, id); it.executeUpdate()

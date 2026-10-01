@@ -6,6 +6,8 @@
     <string name="new_deck">Nouveau paquet</string>
     <string name="deck_name_hint">Nom du paquet (ex. : Anglais – Vocabulaire)</string>
     <string name="deck_color_hint">Couleur</string>
+    <string name="deck_color_title">Couleur du paquet</string>
+    <string name="change_color">Changer la couleur</string>
     <string name="create">Créer</string>
     <string name="cancel">Annuler</string>
     <string name="delete">Supprimer</string>

@@ -182,6 +182,8 @@
   .card .info { flex: 1; min-width: 0; }
   .card .name { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
   .card .sub { font-size: 13px; color: var(--on-variant); margin-top: 2px; overflow-wrap: anywhere; }
+  .swatch { display: inline-block; width: 26px; height: 26px; border-radius: 50%; margin: 3px 7px 3px 0; cursor: pointer; border: 3px solid transparent; vertical-align: middle; }
+  .swatch.sel { border-color: var(--on-surface); }
   .card .actions { display: flex; gap: 8px; flex-shrink: 0;  }
   .fold-arrow { color: var(--accent); font-size: 15px; margin-left: 7px; }
 
@@ -499,7 +501,7 @@ function renderDecks() {
       '<div class="sub">' + d.cardCount + ' carte' + (d.cardCount > 1 ? 's' : '') + '</div></div>' +
       '<div class="actions">' +
         '<button class="pill tonal" data-act="export">Exporter</button>' +
-        '<button class="pill tonal" data-act="edit">Renommer</button>' +
+        '<button class="pill tonal" data-act="edit">Modifier</button>' +
         '<button class="pill danger" data-act="del">Supprimer</button>' +
       '</div></div>').join('');
   m.querySelectorAll('.card').forEach(function (el) {
@@ -517,17 +519,33 @@ function renderDecks() {
 }
 
 function deckDialog(deck) {
+  const decksCount = jparse(N.decks(), []).length;
+  const defaultHex = DECK_COLORS[decksCount % DECK_COLORS.length];
+  const currentHex = deck ? deckColorHex(deck.color) : defaultHex;
+  const swatches = DECK_COLORS.map(function (h) {
+    return '<span class="swatch' + (h === currentHex.toUpperCase() ? ' sel' : '') + '" data-hex="' + h + '" style="background:#' + h + '"></span>';
+  }).join('');
   openDialog(
-    deck ? 'Renommer le paquet' : 'Nouveau paquet',
-    '<label>Nom du paquet</label><input id="f_name" placeholder="ex. : Anglais – Vocabulaire" value="' + esc(deck ? deck.name : '') + '">',
+    deck ? 'Modifier le paquet' : 'Nouveau paquet',
+    '<label>Nom du paquet</label><input id="f_name" placeholder="ex. : Anglais – Vocabulaire" value="' + esc(deck ? deck.name : '') + '">' +
+    '<label>Couleur</label><div id="f_color" data-hex="' + currentHex.toUpperCase() + '">' + swatches + '</div>',
     function () {
       const name = document.getElementById('f_name').value.trim();
       if (!name) return false;
-      if (deck) N.renameDeck(deck.id, name); else N.createDeck(name);
+      const hex = document.getElementById('f_color').dataset.hex;
+      if (deck) { N.renameDeck(deck.id, name); N.setDeckColor(deck.id, hex); }
+      else N.createDeck(name, hex);
       render();
       return true;
     }
   );
+  document.querySelectorAll('#f_color .swatch').forEach(function (sw) {
+    sw.addEventListener('click', function () {
+      document.getElementById('f_color').dataset.hex = sw.dataset.hex;
+      document.querySelectorAll('#f_color .swatch').forEach(function (o) { o.classList.remove('sel'); });
+      sw.classList.add('sel');
+    });
+  });
 }
 
 function confirmDeleteDeck(d) {
@@ -836,6 +854,14 @@ function answerQuiz(btn, opt) {
 
 // Associe chaque bouton QCM à son texte (source de vérité = le DOM)
 function optsOf(btn) { return btn.textContent; }
+
+// Palette des paquets — identique sur Android, PC et iPhone.
+const DECK_COLORS = ['6750A4', '1B873B', 'B3261E', '0B57D0', 'E8590C', '7A1FA2',
+                     '00897B', 'C2185B', 'F9A825', '5D4037', '3949AB', '7CB342'];
+
+function deckColorHex(colorInt) {
+  return (colorInt >>> 0).toString(16).padStart(8, '0').slice(-6).toUpperCase();
+}
 
 function endStudy() { session = null; go('deck'); }
 

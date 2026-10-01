@@ -8,8 +8,8 @@ struct ContentView: View {
     @State private var showStats = false
     @State private var showSettings = false
     @AppStorage("appTheme") private var appTheme = "system"
-    @State private var newDeckName = ""
     @State private var deckToRename: Deck?
+    @State private var deckToColor: Deck?
     @State private var renameText = ""
     @State private var updateMessage: String?
     @State private var releasePage: URL?
@@ -47,6 +47,7 @@ struct ContentView: View {
                                     deckToRename = deck
                                     renameText = deck.name
                                 }
+                                Button("Changer la couleur") { deckToColor = deck }
                                 Button("Exporter (.qrevise)") {
                                     if let json = store.exportJson(deckID: deck.id),
                                        let url = Self.writeTemp(json, name: "\(deck.name).qrevise".replacingOccurrences(of: "/", with: "-")) {
@@ -68,26 +69,14 @@ struct ContentView: View {
                         .accessibilityLabel("Paramètres")
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button { newDeckName = ""; showNewDeck = true } label: { Image(systemName: "plus") }
+                    Button { showNewDeck = true } label: { Image(systemName: "plus") }
                 }
             }
             .sheet(isPresented: $showNewDeck) {
-                NavigationView {
-                    Form {
-                        TextField("Nom du paquet (ex. : Anglais)", text: $newDeckName)
-                    }
-                    .navigationTitle("Nouveau paquet")
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) { Button("Annuler") { showNewDeck = false } }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Créer") {
-                                let name = newDeckName.trimmingCharacters(in: .whitespaces)
-                                if !name.isEmpty { store.addDeck(named: name) }
-                                showNewDeck = false
-                            }
-                        }
-                    }
-                }
+                NewDeckSheet(store: store)
+            }
+            .sheet(item: $deckToColor) { deck in
+                DeckColorSheet(store: store, deck: deck)
             }
             .sheet(item: $deckToRename) { deck in
                 NavigationView {
@@ -187,6 +176,96 @@ struct ContentView: View {
                 }
             }
         }
+    }
+}
+
+// Palette des paquets — identique sur Android, PC et iPhone (voir Store.palette).
+private let deckPalette = ["6750A4", "1B873B", "B3261E", "0B57D0", "E8590C", "7A1FA2",
+                           "00897B", "C2185B", "F9A825", "5D4037", "3949AB", "7CB342"]
+
+/// Rangée de pastilles de couleurs ; la pastille active est entourée.
+private struct DeckColorSwatches: View {
+    let selected: String
+    let onPick: (String) -> Void
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(deckPalette, id: \.self) { hex in
+                    Circle()
+                        .fill(Color(hex: hex))
+                        .frame(width: 34, height: 34)
+                        .overlay(
+                            Circle().stroke(Color.primary.opacity(selected == hex ? 0.8 : 0),
+                                            lineWidth: selected == hex ? 3 : 0)
+                        )
+                        .onTapGesture { onPick(hex) }
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+}
+
+/// Création d'un paquet : nom + couleur personnalisée.
+private struct NewDeckSheet: View {
+    @ObservedObject var store: Store
+    @Environment(\.presentationMode) private var presentation
+    @State private var name = ""
+    @State private var color = "6750A4"
+
+    var body: some View {
+        NavigationView {
+            Form {
+                TextField("Nom du paquet (ex. : Anglais)", text: $name)
+                Section("Couleur") {
+                    DeckColorSwatches(selected: color) { color = $0 }
+                }
+            }
+            .navigationTitle("Nouveau paquet")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Annuler") { presentation.wrappedValue.dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Créer") {
+                        let trimmed = name.trimmingCharacters(in: .whitespaces)
+                        if !trimmed.isEmpty { store.addDeck(named: trimmed, colorHex: color) }
+                        presentation.wrappedValue.dismiss()
+                    }
+                }
+            }
+        }
+        .onAppear { color = Store.defaultColorHex(forCount: store.decks.count) }
+    }
+}
+
+/// Changement de la couleur d'un paquet existant.
+private struct DeckColorSheet: View {
+    @ObservedObject var store: Store
+    let deck: Deck
+    @Environment(\.presentationMode) private var presentation
+    @State private var color = "6750A4"
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("Couleur") {
+                    DeckColorSwatches(selected: color) { color = $0 }
+                }
+            }
+            .navigationTitle("Couleur du paquet")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Annuler") { presentation.wrappedValue.dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Enregistrer") {
+                        store.setDeckColor(deck, colorHex: color)
+                        presentation.wrappedValue.dismiss()
+                    }
+                }
+            }
+        }
+        .onAppear { color = deck.colorHex }
     }
 }
 

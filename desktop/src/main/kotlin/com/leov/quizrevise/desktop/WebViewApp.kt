@@ -131,6 +131,20 @@ object DesktopUi {
     class NativeApi(private val engine: WebEngine) {
         companion object {
             var stageRef: Stage? = null
+
+            /** Palette des paquets — identique sur Android, PC et iPhone. */
+            val DECK_COLORS = intArrayOf(
+                0xFF6750A4.toInt(), 0xFF1B873B.toInt(), 0xFFB3261E.toInt(), 0xFF0B57D0.toInt(),
+                0xFFE8590C.toInt(), 0xFF7A1FA2.toInt(), 0xFF00897B.toInt(), 0xFFC2185B.toInt(),
+                0xFFF9A825.toInt(), 0xFF5D4037.toInt(), 0xFF3949AB.toInt(), 0xFF7CB342.toInt()
+            )
+
+            /** Analyse "#RRGGBB" (ou "RRGGBB") ; renvoie null si invalide. */
+            fun colorFromHexOrNull(hex: String): Int? = try {
+                0xFF000000.toInt() or Integer.parseInt(hex.trim().removePrefix("#"), 16)
+            } catch (_: Exception) {
+                null
+            }
         }
 
         /** Entoure chaque appel natif : échec visible + valeur de repli, jamais d'exception. */
@@ -162,15 +176,17 @@ object DesktopUi {
             arr.toString()
         }
 
-        fun createDeck(name: String): Unit = guard("Création du paquet impossible", Unit) {
-            val colors = intArrayOf(
-                0xFF6750A4.toInt(), 0xFF1B873B.toInt(), 0xFFB3261E.toInt(),
-                0xFF0B57D0.toInt(), 0xFFE8590C.toInt(), 0xFF7A1FA2.toInt()
-            )
-            db.createDeck(name, colors[db.decks().size % colors.size])
+        fun createDeck(name: String, colorHex: String): Unit = guard("Création du paquet impossible", Unit) {
+            val fallback = DECK_COLORS[db.decks().size % DECK_COLORS.size]
+            db.createDeck(name, colorFromHexOrNull(colorHex) ?: fallback)
         }
 
         fun renameDeck(id: Long, name: String): Int = guard("Renommage impossible", -1) { db.renameDeck(id, name) }
+
+        fun setDeckColor(id: Long, colorHex: String): Int = guard("Couleur du paquet impossible", -1) {
+            val color = colorFromHexOrNull(colorHex)
+            if (color == null) -1 else db.updateDeckColor(id, color)
+        }
         fun deleteDeck(id: Long): Int = guard("Suppression impossible", -1) { db.deleteDeck(id) }
         fun addCard(deckId: Long, q: String, a: String): Long = guard("Ajout de carte impossible", -1L) { db.addCard(deckId, q, a) }
         fun updateCard(id: Long, q: String, a: String): Int = guard("Modification impossible", -1) { db.updateCard(id, q, a) }

@@ -4,6 +4,14 @@ Toutes les évolutions notables de QuizRévise sont documentées ici.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et respecte le [versionnement sémantique](https://semver.org/lang/fr/).
 À chaque release, la section correspondante est publiée automatiquement dans les notes de la GitHub Release.
 
+## [1.8.0] - 2026-10-01
+
+### Ajouts
+- 🎨 **Couleur des paquets personnalisable** : choisis la couleur du carré d'un paquet dans une palette de 12 teintes.
+  - À la création du paquet, sur Android, PC (Windows/Linux) et iPhone.
+  - Plus tard : Android → appui long sur le paquet → « Changer la couleur » (ou via « Renommer », qui affiche aussi les couleurs) ; iPhone → appui long → « Changer la couleur » ; PC → bouton « Modifier » du paquet.
+- Les couleurs personnalisées sont conservées à l'export/import (.qrevise) entre les plateformes.
+
 ## [1.7.0] - 2026-10-01
 
 ### Ajouts

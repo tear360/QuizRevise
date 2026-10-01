@@ -72,6 +72,11 @@ class AppDatabase(context: Context) :
         writableDatabase.update("decks", cv, "id = ?", arrayOf(id.toString()))
     }
 
+    fun updateDeckColor(id: Long, color: Int) {
+        val cv = ContentValues().apply { put("color", color) }
+        writableDatabase.update("decks", cv, "id = ?", arrayOf(id.toString()))
+    }
+
     fun deleteDeck(id: Long) {
         writableDatabase.delete("decks", "id = ?", arrayOf(id.toString()))
     }
